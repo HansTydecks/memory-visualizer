@@ -5,6 +5,7 @@ class MemoryVisualizer {
         this.currentMission = 0;
         this.completedMissions = new Set();
         this.selectedFileType = 'text'; // Default file type
+        this.selectedMediaType = null; // Selected media type
         this.simulationState = {
             active: false,
             currentMediaIndex: -1,
@@ -14,52 +15,57 @@ class MemoryVisualizer {
         // Mission definitions adapted from the binary visualizer
         this.missions = [
             {
-                text: "📱 Schritt-für-Schritt:\n\n1️⃣ Öffne die Galerie auf deinem Handy ODER öffne die Kamera-App und schieße ein beliebiges Foto\n\n2️⃣ Gehe zur Galerie und wähle das Foto aus\n\n3️⃣ Tippe auf 'Details' oder das ℹ️-Symbol\n\n4️⃣ Notiere dir die Dateigröße (z.B. 5,3 MB)\n\n5️⃣ Erstelle hier eine Bilddatei mit genau dieser Größe!",
-                check: () => this.files.length > 0 && this.files.some(f => f.type === 'image'),
-                success: "Super! Du hast dein erstes digitales Foto erfasst! Jetzt siehst du, wie viel Speicher ein einziges Bild braucht. Diese Information muss im Arbeitsplatz festgehalten werden!",
-                timer: 6
+            text: "📱 Schritt-für-Schritt:\n\n1. Heute ausnahmsweise mal im Unterricht: Öffne die Kamera-App auf deinem Handy und schieße ein Foto von dir vor dem Computerbildschirm. Achte darauf, dass sonst niemand auf dem Selfie zu sehen ist!\n\n2. Gehe zur Galerie und wähle das Foto aus.\n\n3. Tippe auf 'Details' oder das ℹ️-Symbol\n\n4. Notiere dir die Dateigröße auf dem Arbeitsblatt\n\n5. Erstelle in diesem Programm unter \"Datei hinzufügen\" eine Bilddatei mit genau dieser Größe!",
+            check: () => this.files.length > 0 && this.files.some(f => f.type === 'image'),
+            success: "Super! Du hast dein erstes digitales Foto erfasst! Jetzt siehst du, wie viel Speicher ein einziges Bild braucht. Schreibe diese Information auf dein Arbeitsblatt!",
+            timer: 6
             },
             {
-                text: "💿 Jetzt Speichermedium hinzufügen!\n\n1️⃣ Stehe auf und schaue dir eine echte CD genau an\n\n2️⃣ Finde die Speicherkapazität auf der CD-Hülle oder der CD selbst (meist steht dort '700 MB' oder '650 MB')\n\n3️⃣ Füge die CD mit der korrekten Kapazität als Speichermedium hinzu!",
-                check: () => this.media.length > 0,
-                success: "Perfekt! Jetzt siehst du, wie viele deiner Dateien auf eine CD passen würden! Die CD hat standardmäßig 700 MB Speicherplatz.",
-                timer: 6
+            text: "💿 Nun müssen wir Datei ja noch festhalten, damit sie nicht verloren geht. Das tatsächliche Foto ist auf deinem Handy gespeichert, klar. Aber für unser Bild hier im Programm brauchen wir ein anderes Speichermedium. Darum werden wir eine CD-ROM hinzufügen.\n\n1. Stehe auf und schaue dir die echte CD genau an.\n\n2. Finde die Speicherkapazität auf der CD-Hülle oder der CD selbst (das ist die Zahl vor dem 'MB')\n\n3. Füge die CD mit der korrekten Kapazität als Speichermedium hier hinzu.",
+            check: () => this.media.length > 0,
+            success: "Perfekt! Jetzt siehst du, wie viel Platz dein einzelnes Foto auf der CD einnimmt! Die CD hat standardmäßig 700 MB Speicherplatz.",
+            timer: 6
             },
             {
-                text: "🎵 Füge jetzt eine Musikdatei hinzu! Schaue in deiner Musik-App nach der Größe eines Songs und trage sie ein. Tipp: Ein typischer Song hat etwa 3-5 MB.",
-                check: () => this.files.some(f => f.type === 'music'),
-                success: "Toll! Musikdateien sind oft viel größer als Textdateien. Das merkst du bestimmt schon!",
-                timer: 5
+            text: "🎯 Experimentiere mit der Simulation! Klicke auf 'CD füllen' und schaue, wie sich der Balken füllt!",
+            check: () => this.simulationState.filledSpace > 0,
+            success: "Du siehst jetzt live, wie Speicher gefüllt wird!",
+            timer: 0
             },
             {
-                text: "🎯 Experimentiere mit der Simulation! Klicke auf 'CD füllen' und schaue, wie sich der Balken füllt!",
-                check: () => this.simulationState.filledSpace > 0,
-                success: "Großartig! Du siehst jetzt live, wie Speicher gefüllt wird!",
-                timer: 4
+            text: "Zeit für das nächste Speichermedium. Jetzt kannst du eine DVD hinzufügen. Finde heraus, wie viel Speicher eine DVD hat. Suche dir dazu eine DVD im Klassenzimmer und untersuche sie genau.",
+            check: () => this.media.length > 1,
+            success: "Fantastisch! Siehst du, wie sich alle Balken automatisch anpassen? Größere Medien lassen die anderen kleiner erscheinen. An der tatsächlichen Größe der Medien ändert sich natürlich nichts. Aber im Verhältnis sind CDs eben kleiner als DVDs.",
+            timer: 20
             },
             {
-                text: "📱 Füge eine weitere Datei hinzu - diesmal eine Textdatei! Wie groß ist wohl ein einfacher Brief?",
-                check: () => this.files.some(f => f.type === 'text'),
-                success: "Interessant! Textdateien sind meist winzig im Vergleich zu Bildern und Musik!",
-                timer: 4
+            text: "🎵 Wir speichern aber nicht nur Fotos. Auch andere Medien brauchen Speicherplatz. Manchmal wollen wir zum Beispiel ein schönes Lied hören.\n\n1. Schau in deinen Tauschordner unter \"ausgeteilt\".\n\n2. Suche die Datei namens \"Lied.mp3\".\n\n3. Mit einem Rechtsklick auf die Datei öffnet sich ein Menü. Suche nach den Eigenschaften und klicke darauf. Dort steht die Größe des Liedes.\n\n4. Füge die Musikdatei hier im Programm hinzu.",
+            check: () => this.files.some(f => f.type === 'music'),
+            success: "Toll! Musikdateien sind oft ähnlich groß wie ein Bild deiner Handykamera.",
+            timer: 5
             },
             {
-                text: "🎬 Jetzt wird's spannend! Füge ein Video hinzu. Schaue nach, wie groß eine Videodatei auf deinem Handy ist!",
-                check: () => this.files.some(f => f.type === 'video'),
-                success: "Wow! Videos brauchen enorm viel Speicher - viel mehr als alles andere!",
-                timer: 5
+            text: "Weiter mit dem USB-Stick! Du willst deine Lieblingslieder zu deinen Freunden bringen und mit ihnen teilen.\n\n1. Hole dir einen USB-Stick aus dem Klassenzimmer.\n\n2. Inspiziere den Stick - dort steht die Speicherkapazität (z.B. 8GB, 16GB, 32GB).\n\n3. Füge den USB-Stick mit der korrekten Kapazität als Speichermedium hinzu.\n\n4. Benutze dann die Simulation \"USB-Stick füllen\" und schaue, wie viele deiner Lieder darauf passen!\n\n5. Notiere dir: Wie viele Lieder kannst du zu deinen Freunden bringen?",
+            check: () => this.media.some(m => m.type === 'usb') && this.simulationState.active,
+            success: "Super! Jetzt weißt du, wie viele Lieder auf einen USB-Stick passen. Halte das auf deinem Arbeitsblatt fest.",
+            timer: 6
             },
             {
-                text: "� Zeit für das nächste Speichermedium! Jetzt kannst du eine DVD hinzufügen. Finde heraus, wie viel Speicher eine DVD hat!",
-                check: () => this.media.length > 1,
-                success: "Fantastisch! Siehst du, wie sich alle Balken automatisch anpassen? Größere Medien lassen die anderen kleiner erscheinen!",
-                timer: 6
+            text: "📱 Jetzt schaust du dir dein eigenes Telefon genau an.!\n\n1. Nimm dein Handy in die Hand.\n\n2. Gehe zu den Einstellungen deines Handys.\n\n3. Suche nach \"Speicher\", \"Gerätespeicher\" oder \"Storage\" (je nach Handy unterschiedlich).\n\n4. Dort siehst du die Gesamtkapazität deines Handys (z.B. 64GB, 128GB, 256GB).\n\n5. Füge dein Handy mit dieser Kapazität als Speichermedium hinzu.\n\n6. Starte die Simulation und staune: Wie viele deiner Lieder passen auf dein Handy?",
+            check: () => this.media.some(m => m.type === 'smartphone'),
+            success: "Wahnsinn! Dein Handy kann richtig viele Lieder speichern - kein Wunder, dass du immer Musik dabei haben kannst!",
+            timer: 7
             },
             {
-                text: "🏆 Abschluss-Challenge! Du bist jetzt ein Speicher-Experte! Experimentiere frei mit verschiedenen Dateien und Medien. Probiere die Simulation mit verschiedenen Speichermedien aus und entdecke die Unterschiede!",
-                check: () => this.files.length >= 4 && this.media.length >= 2,
-                success: "🎉 Herzlichen Glückwunsch! Du verstehst jetzt perfekt, wie unterschiedlich groß Dateien und Speichermedien sind! Du bist ein wahrer Speicher-Meister! 🏆",
-                timer: 8
+            text: "📄💿 Zwei finale Aufgaben! \n\n**Teil 1 - Textdatei:** \n1. Schaue im Tauschordner nach einer Textdatei (z.B. \"Brief.txt\" oder \"Text.docx\").\n2. Finde über die Eigenschaften die Größe der Textdatei heraus.\n3. Füge die Textdatei im Programm hinzu.\n\n**Teil 2 - Die große Festplatte:**\n4. Hole die große Festplatte vorne aus dem Klassenzimmer!\n5. Schaue auf das Etikett der Festplatte - dort steht die Kapazität (z.B. 500GB, 1TB, 2TB).\n6. Füge die Festplatte als letztes Speichermedium hinzu und erlebe den Größenunterschied!",
+            check: () => this.files.some(f => f.type === 'text') && this.media.some(m => m.type === 'hdd'),
+            success: 20
+            },
+            {
+            text: "🏆 Abschluss-Challenge! Du bist jetzt ein Speicher-Experte! Experimentiere frei mit verschiedenen Dateien und Medien. Probiere die Simulation mit verschiedenen Speichermedien aus und entdecke die Unterschiede!",
+            check: () => this.media.length >= 2 && this.files.length > 0,
+            success: "🎉 Herzlichen Glückwunsch! Du verstehst jetzt perfekt, wie unterschiedlich groß Dateien und Speichermedien sind! Du bist ein wahrer Speicher-Meister! 🏆",
+            timer: 10
             }
         ];
         
@@ -80,6 +86,12 @@ class MemoryVisualizer {
             btn.addEventListener('click', (e) => this.selectFileType(e.target.dataset.type));
         });
 
+        // Media type selection
+        const mediaTypeButtons = document.querySelectorAll('.media-type-btn');
+        mediaTypeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.selectMediaType(e.target.dataset.type));
+        });
+
         // File management
         document.getElementById('add-file-btn').addEventListener('click', () => this.addFile());
         document.getElementById('file-size').addEventListener('keypress', (e) => {
@@ -94,10 +106,6 @@ class MemoryVisualizer {
         
         // Mission system
         document.getElementById('continue-mission').addEventListener('click', () => this.nextMission());
-        document.getElementById('mission-help-btn').addEventListener('click', () => this.showHelpRequest());
-        document.getElementById('help-yes').addEventListener('click', () => this.showHelp());
-        document.getElementById('help-no').addEventListener('click', () => this.hideHelpRequest());
-        document.getElementById('close-help-explanation').addEventListener('click', () => this.hideHelp());
     }
 
     // File type selection
@@ -109,6 +117,31 @@ class MemoryVisualizer {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-type="${type}"]`).classList.add('active');
+    }
+
+    // Media type selection
+    selectMediaType(type) {
+        this.selectedMediaType = type;
+        
+        // Update button states
+        document.querySelectorAll('.media-type-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-type="${type}"]`).classList.add('active');
+        
+        // Show media input section
+        const inputSection = document.getElementById('media-input-section');
+        const image = document.getElementById('selected-media-image');
+        const label = document.getElementById('selected-media-label');
+        const addBtn = document.getElementById('add-media-btn');
+        
+        image.src = `images/${type}.png`;
+        label.textContent = this.getMediaName(type);
+        addBtn.textContent = `${this.getMediaName(type)} hinzufügen`;
+        inputSection.style.display = 'block';
+        
+        // Scroll to input
+        inputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // Mission System (adapted from binary visualizer)
@@ -168,7 +201,6 @@ class MemoryVisualizer {
         }
         
         this.createMissionButtons();
-        this.updateHelpButtonVisibility();
     }
 
     checkMission() {
@@ -189,12 +221,49 @@ class MemoryVisualizer {
         document.getElementById('mission-result').textContent = message;
         document.getElementById('mission-modal').classList.add('active');
         
+        // Hide continue button initially and show timer
+        const continueBtn = document.getElementById('continue-mission');
+        const timerContainer = document.getElementById('mission-timer');
+        const timerProgress = document.getElementById('timer-progress');
+        const timerText = document.getElementById('timer-text');
+        
+        continueBtn.style.display = 'none';
+        timerContainer.style.display = 'block';
+        timerProgress.style.width = '0%';
+        timerText.style.display = 'none'; // Hide the timer text completely
+        
         // Byte Animation
         const missionByte = document.getElementById('mission-success-byte');
         missionByte.classList.add('celebrating');
         setTimeout(() => {
             missionByte.classList.remove('celebrating');
         }, 600);
+        
+        // Start timer countdown
+        let remainingTime = timer;
+        const startTime = Date.now();
+        const duration = timer * 1000; // Convert to milliseconds
+        
+        const updateTimer = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            timerProgress.style.width = (progress * 100) + '%';
+            remainingTime = Math.max(0, timer - Math.floor(elapsed / 1000));
+            // Timer text is hidden, so we don't update it
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateTimer);
+            } else {
+                // Timer finished - show continue button
+                timerContainer.style.display = 'none';
+                continueBtn.style.display = 'block';
+                continueBtn.focus(); // Focus for accessibility
+            }
+        };
+        
+        // Start the timer animation
+        requestAnimationFrame(updateTimer);
         
         // Show confetti for final mission
         if (this.currentMission === this.missions.length - 1) {
@@ -254,48 +323,6 @@ class MemoryVisualizer {
         this.updateMission();
     }
 
-    updateHelpButtonVisibility() {
-        const helpBtn = document.getElementById('mission-help-btn');
-        if (this.currentMission >= 3) { // Show help from mission 4 onwards
-            helpBtn.classList.remove('hidden');
-        } else {
-            helpBtn.classList.add('hidden');
-        }
-    }
-
-    showHelpRequest() {
-        document.getElementById('help-request-modal').classList.add('active');
-    }
-
-    hideHelpRequest() {
-        document.getElementById('help-request-modal').classList.remove('active');
-    }
-
-    showHelp() {
-        this.hideHelpRequest();
-        let helpText = "Hier sind einige Tipps für diese Mission:\n\n";
-        
-        const mission = this.missions[this.currentMission];
-        if (this.currentMission === 0) {
-            helpText = "📱 Öffne deine Foto-App auf dem Handy und schaue bei den Details eines Fotos nach der Dateigröße. Diese findest du meist in den Eigenschaften oder Informationen des Bildes.";
-        } else if (this.currentMission === 1) {
-            helpText = "🎵 Öffne deine Musik-App und schaue bei den Details eines Songs nach. Die Dateigröße steht meist bei den Eigenschaften oder Informationen.";
-        } else if (this.currentMission === 2) {
-            helpText = "💿 Eine CD hat normalerweise 650-700 MB Speicherplatz. Du kannst auch auf der CD selbst nachschauen - dort steht oft die Kapazität drauf!";
-        } else if (this.currentMission === 3) {
-            helpText = "🎯 Klicke auf den Button 'CD füllen' unter der Visualisierung. Du siehst dann, wie sich der Balken der CD langsam füllt!";
-        } else {
-            helpText = "💡 Experimentiere mit verschiedenen Dateitypen und Größen. Beobachte, wie sich die Visualisierung ändert!";
-        }
-        
-        document.getElementById('help-explanation-content').innerHTML = `<p>${helpText}</p>`;
-        document.getElementById('help-explanation-modal').classList.add('active');
-    }
-
-    hideHelp() {
-        document.getElementById('help-explanation-modal').classList.remove('active');
-    }
-
     // File Management System
     addFile() {
         const type = this.selectedFileType;
@@ -324,7 +351,8 @@ class MemoryVisualizer {
             originalUnit: unit
         };
 
-        this.files.push(file);
+        // Replace existing file - only one file allowed at a time
+        this.files = [file];
         this.renderFileList();
         this.updateVisualization();
         this.clearFileInputs();
@@ -514,58 +542,32 @@ class MemoryVisualizer {
             return;
         }
 
+        if (!this.selectedMediaType) {
+            this.showError('Bitte wähle zuerst ein Speichermedium aus.');
+            return;
+        }
+
         const capacityInBytes = this.convertToBytes(capacity, unit);
         
-        // Determine media type and name based on current progression
-        let mediaType, mediaName, imageSrc;
-        if (this.media.length === 0) {
-            // First medium is always CD
-            mediaType = 'cd';
-            mediaName = 'CD';
-            imageSrc = 'images/cd.png';
-            
-            // Validate CD capacity
-            if (!this.validateMediaCapacity(mediaType, capacityInBytes, capacity, unit)) {
-                return; // Validation failed
-            }
-        } else {
-            // Get the selected media type from the interface
-            const selectedSection = document.getElementById('selected-media-input');
-            if (selectedSection) {
-                const selectedType = selectedSection.getAttribute('data-selected-type');
-                if (selectedType) {
-                    mediaType = selectedType;
-                    mediaName = this.getMediaName(mediaType);
-                    imageSrc = `images/${mediaType}.png`;
-                } else {
-                    // Fallback: determine by progression
-                    mediaType = this.getMediaTypeByProgression();
-                    mediaName = this.getMediaName(mediaType);
-                    imageSrc = `images/${mediaType}.png`;
-                }
-            } else {
-                // Fallback: determine by progression
-                mediaType = this.getMediaTypeByProgression();
-                mediaName = this.getMediaName(mediaType);
-                imageSrc = `images/${mediaType}.png`;
-            }
+        // Validate media capacity
+        if (!this.validateMediaCapacity(this.selectedMediaType, capacityInBytes, capacity, unit)) {
+            return; // Validation failed
         }
 
         const medium = {
             id: Date.now(),
-            name: mediaName,
-            type: mediaType,
+            name: this.getMediaName(this.selectedMediaType),
+            type: this.selectedMediaType,
             capacity: capacityInBytes,
             displayCapacity: this.formatSize(capacityInBytes),
             used: 0,
-            imageSrc
+            imageSrc: `images/${this.selectedMediaType}.png`
         };
 
         this.media.push(medium);
         this.sortMediaByCapacity();
         this.renderMediaList();
         this.updateVisualization();
-        this.updateMediaInput(); // Update for next medium
         this.clearMediaInputs();
         this.checkMission(); // Check if mission is completed
         
@@ -575,12 +577,6 @@ class MemoryVisualizer {
             const newItem = document.querySelector(`[data-media-id="${medium.id}"]`);
             if (newItem) newItem.classList.add('fade-in');
         }, 10);
-    }
-
-    getMediaTypeByProgression() {
-        // Progression: CD -> DVD -> Handy -> USB -> Festplatte -> Diskette
-        const progression = ['cd', 'dvd', 'smartphone', 'usb', 'hdd', 'floppy'];
-        return progression[this.media.length] || 'usb'; // fallback to usb
     }
 
     determineMediaType(capacityInBytes) {
@@ -605,175 +601,6 @@ class MemoryVisualizer {
             hdd: 'Festplatte'
         };
         return names[type] || 'Speichermedium';
-    }
-
-    updateMediaInput() {
-        if (this.media.length === 1) {
-            // After first CD, show DVD option
-            const section = document.querySelector('.guided-media-section');
-            section.innerHTML = `
-                <div class="media-selection">
-                    <p class="instruction-text">Großartig! Jetzt kannst du eine DVD hinzufügen:</p>
-                    <div class="media-options">
-                        <div class="media-option" onclick="visualizer.selectMediaType('dvd')">
-                            <img src="images/dvd.png" alt="DVD" class="media-option-img">
-                            <span>DVD</span>
-                        </div>
-                    </div>
-                    <div class="media-input-section" id="selected-media-input" style="display: none;">
-                        <div class="media-visual">
-                            <img src="images/dvd.png" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">DVD</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="mb">Megabyte (MB)</option>
-                                <option value="gb">Gigabyte (GB)</option>
-                                <option value="tb">Terabyte (TB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">DVD hinzufügen</button>
-                    </div>
-                </div>
-            `;
-        } else if (this.media.length === 2) {
-            // After DVD, show Handy option
-            const section = document.querySelector('.guided-media-section');
-            section.innerHTML = `
-                <div class="media-selection">
-                    <p class="instruction-text">Perfekt! Als nächstes kommt dein Handy:</p>
-                    <div class="media-options">
-                        <div class="media-option" onclick="visualizer.selectMediaType('smartphone')">
-                            <img src="images/smartphone.png" alt="Handy" class="media-option-img">
-                            <span>Handy</span>
-                        </div>
-                    </div>
-                    <div class="media-input-section" id="selected-media-input" style="display: none;">
-                        <div class="media-visual">
-                            <img src="images/smartphone.png" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">Handy</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="gb">Gigabyte (GB)</option>
-                                <option value="tb">Terabyte (TB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">Handy hinzufügen</button>
-                    </div>
-                </div>
-            `;
-        } else if (this.media.length === 3) {
-            // After Handy, show USB-Stick option
-            const section = document.querySelector('.guided-media-section');
-            section.innerHTML = `
-                <div class="media-selection">
-                    <p class="instruction-text">Super! Jetzt kommt ein USB-Stick:</p>
-                    <div class="media-options">
-                        <div class="media-option" onclick="visualizer.selectMediaType('usb')">
-                            <img src="images/usb.png" alt="USB-Stick" class="media-option-img">
-                            <span>USB-Stick</span>
-                        </div>
-                    </div>
-                    <div class="media-input-section" id="selected-media-input" style="display: none;">
-                        <div class="media-visual">
-                            <img src="images/usb.png" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">USB-Stick</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="gb">Gigabyte (GB)</option>
-                                <option value="tb">Terabyte (TB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">USB-Stick hinzufügen</button>
-                    </div>
-                </div>
-            `;
-        } else if (this.media.length === 4) {
-            // After USB-Stick, show Festplatte option
-            const section = document.querySelector('.guided-media-section');
-            section.innerHTML = `
-                <div class="media-selection">
-                    <p class="instruction-text">Toll! Jetzt eine große Festplatte:</p>
-                    <div class="media-options">
-                        <div class="media-option" onclick="visualizer.selectMediaType('hdd')">
-                            <img src="images/hdd.png" alt="Festplatte" class="media-option-img">
-                            <span>Festplatte</span>
-                        </div>
-                    </div>
-                    <div class="media-input-section" id="selected-media-input" style="display: none;">
-                        <div class="media-visual">
-                            <img src="images/hdd.png" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">Festplatte</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="gb">Gigabyte (GB)</option>
-                                <option value="tb">Terabyte (TB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">Festplatte hinzufügen</button>
-                    </div>
-                </div>
-            `;
-        } else if (this.media.length >= 5) {
-            // Final bonus: Diskette
-            const section = document.querySelector('.guided-media-section');
-            section.innerHTML = `
-                <div class="media-selection">
-                    <p class="instruction-text">Bonus-Challenge! Die historische Diskette als Vergleich:</p>
-                    <div class="media-options">
-                        <div class="media-option" onclick="visualizer.selectMediaType('floppy')">
-                            <img src="images/floppy.png" alt="Diskette" class="media-option-img">
-                            <span>Diskette</span>
-                        </div>
-                    </div>
-                    <div class="media-input-section" id="selected-media-input" style="display: none;">
-                        <div class="media-visual">
-                            <img src="images/floppy.png" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">Diskette</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="kb">Kilobyte (KB)</option>
-                                <option value="mb">Megabyte (MB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">Diskette hinzufügen</button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Re-bind the add media button event if it exists
-        const addBtn = document.getElementById('add-media-btn');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => this.addMedia());
-        }
-    }
-
-    selectMediaType(type) {
-        const inputSection = document.getElementById('selected-media-input');
-        const image = document.getElementById('selected-media-image');
-        const label = document.getElementById('selected-media-label');
-        
-        image.src = `images/${type}.png`;
-        label.textContent = this.getMediaName(type);
-        inputSection.style.display = 'block';
-        inputSection.setAttribute('data-selected-type', type);
-        
-        // Update button text
-        const addBtn = document.getElementById('add-media-btn');
-        addBtn.textContent = `${this.getMediaName(type)} hinzufügen`;
-        
-        // Scroll to input
-        inputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     animateMediaScaling() {
@@ -910,6 +737,9 @@ class MemoryVisualizer {
                     <div class="media-bar-info">
                         ${this.formatSize(usedSpace)} / ${medium.displayCapacity}
                     </div>
+                </div>
+                <div class="media-bar-summary">
+                    ${filesFit > 0 ? `${filesFit}× alle Dateien passen hinein` : ''}
                 </div>
             `;
             

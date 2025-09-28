@@ -46,21 +46,49 @@
             <!-- Speichermedien erfassen -->
             <section class="card">
                 <h2>Speichermedium hinzufügen</h2>
-                <div class="guided-media-section">
-                    <div class="media-visual">
-                        <img src="images/cd.png" alt="CD" class="media-image" id="current-media-image">
-                        <div class="media-label">CD</div>
+                <div class="media-selection-section">
+                    <div class="media-type-selection">
+                        <button class="media-type-btn" data-type="cd">
+                            <img src="images/cd.png" alt="CD" class="media-btn-img">
+                            <span>CD</span>
+                        </button>
+                        <button class="media-type-btn" data-type="dvd">
+                            <img src="images/dvd.png" alt="DVD" class="media-btn-img">
+                            <span>DVD</span>
+                        </button>
+                        <button class="media-type-btn" data-type="usb">
+                            <img src="images/usb.png" alt="USB-Stick" class="media-btn-img">
+                            <span>USB-Stick</span>
+                        </button>
+                        <button class="media-type-btn" data-type="smartphone">
+                            <img src="images/smartphone.png" alt="Handy" class="media-btn-img">
+                            <span>Handy</span>
+                        </button>
+                        <button class="media-type-btn" data-type="hdd">
+                            <img src="images/hdd.png" alt="Festplatte" class="media-btn-img">
+                            <span>Festplatte</span>
+                        </button>
+                        <button class="media-type-btn" data-type="floppy">
+                            <img src="images/floppy.png" alt="Diskette" class="media-btn-img">
+                            <span>Diskette</span>
+                        </button>
                     </div>
-                    <div class="media-input-section">
-                        <p class="instruction-text">Schaue dir eine echte CD an und finde heraus, wie viel Speicher sie hat!</p>
+                    
+                    <div class="media-input-section" id="media-input-section" style="display: none;">
+                        <div class="media-visual">
+                            <img src="" alt="Medium" class="media-image" id="selected-media-image">
+                            <div class="media-label" id="selected-media-label">Medium</div>
+                        </div>
                         <div class="capacity-input">
                             <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
                             <select id="media-capacity-unit">
+                                <option value="kb">Kilobyte (KB)</option>
                                 <option value="mb">Megabyte (MB)</option>
                                 <option value="gb">Gigabyte (GB)</option>
+                                <option value="tb">Terabyte (TB)</option>
                             </select>
                         </div>
-                        <button id="add-media-btn">CD hinzufügen</button>
+                        <button id="add-media-btn">Medium hinzufügen</button>
                     </div>
                 </div>
                 
@@ -99,7 +127,6 @@
                     <img src="Byte_mascot/Byte_normal.png" alt="Byte Maskottchen">
                 </div>
                 <h2>Mission</h2>
-                <button class="mission-help-btn hidden" id="mission-help-btn" title="Hilfe anfordern">🆘</button>
             </div>
             <div class="mission-content">
                 <div class="mission-text" id="mission-content">
@@ -143,7 +170,13 @@
                 <div class="mission-result" id="mission-result">
                     <!-- Wird dynamisch gefüllt -->
                 </div>
-                <button class="continue-btn" id="continue-mission">Weiter</button>
+                <div class="mission-timer" id="mission-timer" style="display: none;">
+                    <div class="timer-bar">
+                        <div class="timer-progress" id="timer-progress"></div>
+                    </div>
+                    <div class="timer-text" id="timer-text">Bitte warten...</div>
+                </div>
+                <button class="continue-btn" id="continue-mission" style="display: none;">Weiter</button>
             </div>
         </div>
     </div>

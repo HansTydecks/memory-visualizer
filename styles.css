@@ -132,6 +132,48 @@ header p {
     color: white;
 }
 
+/* Media Type Selection */
+.media-type-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.media-type-btn {
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.media-type-btn:hover {
+    border-color: var(--accent-secondary);
+    background: var(--hover-bg);
+    transform: translateY(-1px);
+}
+
+.media-type-btn.active {
+    border-color: var(--accent-secondary);
+    background: var(--accent-secondary);
+    color: white;
+}
+
+.media-btn-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
 .size-input-row {
     display: flex;
     gap: 12px;
@@ -345,6 +387,20 @@ button.danger:hover {
     transform: translateY(-50%);
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+.media-bar-summary {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    min-height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Simulation Controls */
@@ -826,6 +882,33 @@ button.danger:hover {
 .continue-btn:hover {
     background: #2ea043;
     transform: translateY(-1px);
+}
+
+.mission-timer {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.timer-bar {
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.timer-progress {
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    height: 100%;
+    width: 0%;
+    transition: width 0.1s linear;
+    border-radius: 10px;
+}
+
+.timer-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
 }
 
 .help-content {
