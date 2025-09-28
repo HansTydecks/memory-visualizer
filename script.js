@@ -14,22 +14,22 @@ class MemoryVisualizer {
         // Mission definitions adapted from the binary visualizer
         this.missions = [
             {
-                text: "🔍 Willkommen beim Speicher-Visualizer! Schaue dir ein Foto auf deinem Handy an und finde heraus, wie groß es ist. Erstelle dann eine Bilddatei mit dieser Größe!",
+                text: "📱 Schritt-für-Schritt:\n\n1️⃣ Öffne die Galerie auf deinem Handy ODER öffne die Kamera-App und schieße ein beliebiges Foto\n\n2️⃣ Gehe zur Galerie und wähle das Foto aus\n\n3️⃣ Tippe auf 'Details' oder das ℹ️-Symbol\n\n4️⃣ Notiere dir die Dateigröße (z.B. 5,3 MB)\n\n5️⃣ Erstelle hier eine Bilddatei mit genau dieser Größe!",
                 check: () => this.files.length > 0 && this.files.some(f => f.type === 'image'),
-                success: "Super! Du hast dein erstes digitales Foto erfasst! Jetzt siehst du, wie viel Speicher ein einziges Bild braucht.",
+                success: "Super! Du hast dein erstes digitales Foto erfasst! Jetzt siehst du, wie viel Speicher ein einziges Bild braucht. Diese Information muss im Arbeitsplatz festgehalten werden!",
                 timer: 6
             },
             {
-                text: "🎵 Füge jetzt eine Musikdatei hinzu! Schaue in deiner Musik-App nach der Größe eines Songs und trage sie ein.",
-                check: () => this.files.some(f => f.type === 'music'),
-                success: "Toll! Musikdateien sind oft viel größer als Bilder. Das merkst du bestimmt schon!",
-                timer: 5
-            },
-            {
-                text: "💿 Zeit für dein erstes Speichermedium! Schaue dir eine echte CD an und finde heraus, wie viel Speicher sie hat. Dann füge sie hinzu!",
+                text: "💿 Jetzt Speichermedium hinzufügen!\n\n1️⃣ Stehe auf und schaue dir eine echte CD genau an\n\n2️⃣ Finde die Speicherkapazität auf der CD-Hülle oder der CD selbst (meist steht dort '700 MB' oder '650 MB')\n\n3️⃣ Füge die CD mit der korrekten Kapazität als Speichermedium hinzu!",
                 check: () => this.media.length > 0,
-                success: "Perfekt! Jetzt siehst du, wie viele deiner Dateien auf eine CD passen würden!",
+                success: "Perfekt! Jetzt siehst du, wie viele deiner Dateien auf eine CD passen würden! Die CD hat standardmäßig 700 MB Speicherplatz.",
                 timer: 6
+            },
+            {
+                text: "🎵 Füge jetzt eine Musikdatei hinzu! Schaue in deiner Musik-App nach der Größe eines Songs und trage sie ein. Tipp: Ein typischer Song hat etwa 3-5 MB.",
+                check: () => this.files.some(f => f.type === 'music'),
+                success: "Toll! Musikdateien sind oft viel größer als Textdateien. Das merkst du bestimmt schon!",
+                timer: 5
             },
             {
                 text: "🎯 Experimentiere mit der Simulation! Klicke auf 'CD füllen' und schaue, wie sich der Balken füllt!",
@@ -91,9 +91,6 @@ class MemoryVisualizer {
         document.getElementById('media-capacity').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.addMedia();
         });
-        
-        // Simulation controls
-        document.getElementById('reset-simulation-btn').addEventListener('click', () => this.resetSimulation());
         
         // Mission system
         document.getElementById('continue-mission').addEventListener('click', () => this.nextMission());
@@ -164,7 +161,7 @@ class MemoryVisualizer {
 
     updateMission() {
         if (this.currentMission < this.missions.length) {
-            document.getElementById('mission-content').textContent = this.missions[this.currentMission].text;
+            document.getElementById('mission-content').innerHTML = this.missions[this.currentMission].text.replace(/\n/g, '<br>');
             document.getElementById('mission-counter').textContent = `${this.currentMission + 1} / ${this.missions.length}`;
         } else {
             document.getElementById('mission-content').textContent = "🎉 Alle Missionen erfüllt! Du bist jetzt ein Speicher-Experte!";
@@ -311,6 +308,12 @@ class MemoryVisualizer {
         }
 
         const sizeInBytes = this.convertToBytes(size, unit);
+        
+        // Validate realistic file sizes
+        if (!this.validateFileSize(type, sizeInBytes, size, unit)) {
+            return; // Validation failed, error message already shown
+        }
+
         const file = {
             id: Date.now(),
             name: this.generateFileName(type),
@@ -332,6 +335,114 @@ class MemoryVisualizer {
             const newItem = document.querySelector(`[data-file-id="${file.id}"]`);
             if (newItem) newItem.classList.add('fade-in');
         }, 10);
+    }
+
+    validateFileSize(type, sizeInBytes, originalSize, originalUnit) {
+        // Define realistic size ranges for different file types
+        const sizeRanges = {
+            image: { 
+                min: 50 * 1024,      // 50 KB
+                max: 50 * 1024 * 1024, // 50 MB
+                typical: "100 KB - 10 MB"
+            },
+            text: { 
+                min: 100,            // 100 Bytes
+                max: 10 * 1024 * 1024, // 10 MB
+                typical: "1 KB - 1 MB"
+            },
+            music: { 
+                min: 500 * 1024,    // 500 KB
+                max: 20 * 1024 * 1024, // 20 MB
+                typical: "3 - 8 MB"
+            },
+            video: { 
+                min: 1024 * 1024,   // 1 MB
+                max: 10 * 1024 * 1024 * 1024, // 10 GB
+                typical: "100 MB - 2 GB"
+            }
+        };
+
+        const range = sizeRanges[type];
+        if (!range) return true; // Unknown type, allow it
+
+        if (sizeInBytes < range.min || sizeInBytes > range.max) {
+            const fileTypeNames = {
+                image: 'Bild',
+                text: 'Textdatei',
+                music: 'Musikdatei',
+                video: 'Videodatei'
+            };
+
+            const confirmation = confirm(
+                `🤔 Bist du sicher? ${originalSize} ${originalUnit.toUpperCase()} ist ungewöhnlich für eine ${fileTypeNames[type]}.\n\n` +
+                `Typische Größe für ${fileTypeNames[type]}: ${range.typical}\n\n` +
+                `Möchtest du die Datei trotzdem hinzufügen?`
+            );
+
+            return confirmation;
+        }
+
+        return true;
+    }
+
+    validateMediaCapacity(mediaType, capacityInBytes, originalCapacity, originalUnit) {
+        // Define realistic capacity ranges for different media types
+        const capacityRanges = {
+            cd: { 
+                min: 600 * 1024 * 1024,    // 600 MB
+                max: 800 * 1024 * 1024,    // 800 MB
+                typical: "650-700 MB"
+            },
+            dvd: { 
+                min: 3.5 * 1024 * 1024 * 1024,  // 3.5 GB
+                max: 9 * 1024 * 1024 * 1024,    // 9 GB
+                typical: "4.7 GB"
+            },
+            usb: { 
+                min: 128 * 1024 * 1024,    // 128 MB
+                max: 1024 * 1024 * 1024 * 1024, // 1 TB
+                typical: "4 GB - 128 GB"
+            },
+            smartphone: { 
+                min: 16 * 1024 * 1024 * 1024,   // 16 GB
+                max: 1024 * 1024 * 1024 * 1024, // 1 TB
+                typical: "64 GB - 512 GB"
+            },
+            hdd: { 
+                min: 100 * 1024 * 1024 * 1024,  // 100 GB
+                max: 20 * 1024 * 1024 * 1024 * 1024, // 20 TB
+                typical: "500 GB - 4 TB"
+            },
+            floppy: { 
+                min: 700 * 1024,          // 700 KB
+                max: 3 * 1024 * 1024,     // 3 MB
+                typical: "1.44 MB"
+            }
+        };
+
+        const range = capacityRanges[mediaType];
+        if (!range) return true; // Unknown type, allow it
+
+        if (capacityInBytes < range.min || capacityInBytes > range.max) {
+            const mediaNames = {
+                cd: 'CD',
+                dvd: 'DVD',
+                usb: 'USB-Stick',
+                smartphone: 'Handy-Speicher',
+                hdd: 'Festplatte',
+                floppy: 'Diskette'
+            };
+
+            const confirmation = confirm(
+                `🤔 Bist du sicher? ${originalCapacity} ${originalUnit.toUpperCase()} ist ungewöhnlich für eine ${mediaNames[mediaType]}.\n\n` +
+                `Typische Kapazität für ${mediaNames[mediaType]}: ${range.typical}\n\n` +
+                `Möchtest du das Speichermedium trotzdem hinzufügen?`
+            );
+
+            return confirmation;
+        }
+
+        return true;
     }
 
     removeFile(fileId) {
@@ -412,6 +523,11 @@ class MemoryVisualizer {
             mediaType = 'cd';
             mediaName = 'CD';
             imageSrc = 'images/cd.png';
+            
+            // Validate CD capacity
+            if (!this.validateMediaCapacity(mediaType, capacityInBytes, capacity, unit)) {
+                return; // Validation failed
+            }
         } else {
             // Get the selected media type from the interface
             const selectedSection = document.getElementById('selected-media-input');
@@ -676,7 +792,11 @@ class MemoryVisualizer {
         this.media = this.media.filter(medium => medium.id !== mediaId);
         this.renderMediaList();
         this.updateVisualization();
-        this.resetSimulation();
+        this.simulationState = {
+            active: false,
+            currentMediaIndex: -1,
+            filledSpace: 0
+        };
     }
 
     sortMediaByCapacity() {
@@ -762,8 +882,15 @@ class MemoryVisualizer {
             // Calculate how many files fit
             const totalFileSize = this.files.reduce((sum, file) => sum + file.size, 0);
             const filesFit = totalFileSize > 0 ? Math.floor(medium.capacity / totalFileSize) : 0;
-            const usedSpace = Math.min(totalFileSize * filesFit, medium.capacity);
-            const percentageFilled = medium.capacity > 0 ? (usedSpace / medium.capacity) * 100 : 0;
+            
+            // Only calculate used space if simulation is active for this medium
+            let usedSpace = 0;
+            let percentageFilled = 0;
+            
+            if (this.simulationState.active && this.simulationState.currentMediaIndex === index) {
+                usedSpace = Math.min(this.simulationState.filledSpace, medium.capacity);
+                percentageFilled = medium.capacity > 0 ? (usedSpace / medium.capacity) * 100 : 0;
+            }
             
             // Proportional width based on capacity
             const proportionalWidth = (medium.capacity / maxCapacity) * 100;
@@ -778,7 +905,7 @@ class MemoryVisualizer {
                 </div>
                 <div class="media-bar" style="width: ${proportionalWidth}%;">
                     <div class="media-bar-fill" style="width: ${percentageFilled}%;">
-                        ${filesFit > 0 ? `${filesFit}× alle Dateien` : ''}
+                        ${usedSpace > 0 ? `${this.formatSize(usedSpace)}` : ''}
                     </div>
                     <div class="media-bar-info">
                         ${this.formatSize(usedSpace)} / ${medium.displayCapacity}
@@ -900,15 +1027,6 @@ class MemoryVisualizer {
     }
 
     // Fixed reset simulation
-    resetSimulation() {
-        this.simulationState = {
-            active: false,
-            currentMediaIndex: -1,
-            filledSpace: 0
-        };
-        this.updateVisualization(); // This will properly reset all bars
-    }
-
     // Utility Functions
     convertToBytes(size, unit) {
         const conversions = {
