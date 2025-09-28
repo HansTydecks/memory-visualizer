@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speicher-Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Speicher-Visualizer</h1>
+            <p>Verstehe Speichergrößen interaktiv</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Dateien erfassen -->
+            <section class="card">
+                <h2>Dateien hinzufügen</h2>
+                <div class="file-input-group">
+                    <div class="file-type-selection">
+                        <button class="file-type-btn active" data-type="text">📄 Textdatei</button>
+                        <button class="file-type-btn" data-type="image">🖼️ Bild</button>
+                        <button class="file-type-btn" data-type="music">🎵 Musikdatei</button>
+                        <button class="file-type-btn" data-type="video">🎬 Film</button>
+                    </div>
+                    
+                    <div class="size-input-row">
+                        <input type="number" id="file-size" min="1" placeholder="Größe">
+                        
+                        <select id="file-unit">
+                            <option value="byte">Byte</option>
+                            <option value="kb">Kilobyte (KB)</option>
+                            <option value="mb">Megabyte (MB)</option>
+                            <option value="gb">Gigabyte (GB)</option>
+                        </select>
+                        
+                        <button id="add-file-btn">Datei hinzufügen</button>
+                    </div>
+                </div>
+                
+                <div id="file-list" class="file-list">
+                    <!-- Dateien werden hier dynamisch eingefügt -->
+                </div>
+            </section>
+
+            <!-- Speichermedien erfassen -->
+            <section class="card">
+                <h2>Speichermedium hinzufügen</h2>
+                <div class="guided-media-section">
+                    <div class="media-visual">
+                        <img src="images/cd.png" alt="CD" class="media-image" id="current-media-image">
+                        <div class="media-label">CD</div>
+                    </div>
+                    <div class="media-input-section">
+                        <p class="instruction-text">Schaue dir eine echte CD an und finde heraus, wie viel Speicher sie hat!</p>
+                        <div class="capacity-input">
+                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
+                            <select id="media-capacity-unit">
+                                <option value="mb">Megabyte (MB)</option>
+                                <option value="gb">Gigabyte (GB)</option>
+                            </select>
+                        </div>
+                        <button id="add-media-btn">CD hinzufügen</button>
+                    </div>
+                </div>
+                
+                <div id="media-list" class="media-list">
+                    <!-- Speichermedien werden hier dynamisch eingefügt -->
+                </div>
+            </section>
+
+            <!-- Visualisierung -->
+            <section class="card visualization-card">
+                <h2>Speicher-Visualisierung</h2>
+                <div id="visualization-container" class="visualization-container">
+                    <div id="no-data-message" class="no-data">
+                        Füge Dateien und Speichermedien hinzu, um die Visualisierung zu sehen.
+                    </div>
+                    <div id="visualization-content" class="visualization-content" style="display: none;">
+                        <!-- Balkendiagramme werden hier dynamisch eingefügt -->
+                    </div>
+                </div>
+                
+                <div id="simulation-controls" class="simulation-controls" style="display: none;">
+                    <h3>Simulation starten</h3>
+                    <p>Wähle ein Speichermedium und fülle es schrittweise:</p>
+                    <div class="simulation-buttons">
+                        <!-- Buttons werden dynamisch generiert -->
+                    </div>
+                    <button id="reset-simulation-btn">Simulation zurücksetzen</button>
+                </div>
+            </section>
+    </div>
+
+    <!-- Mission System -->
+    <section class="mission-section">
+        <div class="mission-container">
+            <div class="mission-header">
+                <div class="byte-mascot" id="mission-byte-mascot">
+                    <img src="Byte_mascot/Byte_normal.png" alt="Byte Maskottchen">
+                </div>
+                <h2>Mission</h2>
+                <button class="mission-help-btn hidden" id="mission-help-btn" title="Hilfe anfordern">🆘</button>
+            </div>
+            <div class="mission-content">
+                <div class="mission-text" id="mission-content">
+                    Lade die Anwendung...
+                </div>
+                <div class="mission-progress">
+                    <span id="mission-counter">1 / 8</span>
+                </div>
+            </div>
+            <div class="mission-navigation">
+                <div class="mission-buttons" id="mission-buttons">
+                    <!-- Mission buttons will be generated dynamically -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="impressum">
+            <p>
+                Entwickelt für Lernende und Lehrende |
+                <a href="https://tinfo.space/teachers/Digitale_Tools/" target="_blank" rel="noopener">More apps and tools</a> |
+                <a href="http://contact.tinfo.space/" id="contact-link">Kontakt</a> |
+                <a href="https://linktr.ee/tinfo.space" target="_blank" rel="noopener">Links</a> |
+                <a href="https://github.com/HansTydecks" target="_blank" rel="noopener">GitHub</a> |
+                © 2025 Hans Tydecks
+            </p>
+        </div>
+    </footer>
+
+    <!-- Mission Success Modal -->
+    <div class="modal-overlay" id="mission-modal">
+        <div class="modal-content mission-modal">
+            <div class="mission-success">
+                <div class="modal-header-with-byte">
+                    <div class="byte-mascot celebrating" id="mission-success-byte">
+                        <img src="Byte_mascot/Byte_Happy.png" alt="Byte freut sich!">
+                    </div>
+                    <h3>🎉 Mission erfüllt!</h3>
+                </div>
+                <div class="mission-result" id="mission-result">
+                    <!-- Wird dynamisch gefüllt -->
+                </div>
+                <button class="continue-btn" id="continue-mission">Weiter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Request Modal -->
+    <div class="modal-overlay" id="help-request-modal">
+        <div class="modal-content help-modal">
+            <div class="modal-header">
+                <div class="modal-header-with-byte">
+                    <div class="byte-mascot" id="help-request-byte">
+                        <img src="Byte_mascot/Byte_normal.png" alt="Byte hilft">
+                    </div>
+                    <h3>🆘 Hilfe anfordern</h3>
+                </div>
+            </div>
+            <div class="help-content">
+                <p>Brauchst du Hilfe bei dieser Aufgabe?</p>
+                <div id="help-progress-container" style="display: none;">
+                    <!-- Progress bar wird hier eingefügt -->
+                </div>
+                <div class="help-buttons">
+                    <button class="help-btn-yes" id="help-yes" style="display: block;">Ja, ich brauche Hilfe!</button>
+                    <button class="help-btn-no" id="help-no">Nein, ich versuche es noch mal selbst</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Explanation Modal -->
+    <div class="modal-overlay" id="help-explanation-modal">
+        <div class="modal-content help-modal">
+            <div class="modal-header">
+                <div class="modal-header-with-byte">
+                    <div class="byte-mascot" id="help-explanation-byte">
+                        <img src="Byte_mascot/Byte_normal.png" alt="Byte erklärt">
+                    </div>
+                    <h3>🎯 So geht's!</h3>
+                </div>
+                <button class="close-btn" id="close-help-explanation">&times;</button>
+            </div>
+            <div class="help-explanation" id="help-explanation-content">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
