@@ -1,4 +1,5 @@
-/* Ablaufsteuerung: Gerät scannen → Explosionsansicht → Schätzfrage → Speichervorgang → Größenvergleich */
+/* Ablaufsteuerung: Gerät scannen → Explosionsansicht → Schätzfrage → Speichervorgang → Größenvergleich.
+ * Grundsatz: Jede Station zeigt EINE Aufgabe und EINEN Hauptknopf. */
 (function () {
     const MV = window.MV;
     const U = MV.units;
@@ -6,16 +7,11 @@
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const KEY = 'memory-scan-v2';
 
-    const STEPS = [
-        { n: 1, name: 'Scannen' },
-        { n: 2, name: 'Zerlegen' },
-        { n: 3, name: 'Schätzen' },
-        { n: 4, name: 'Speichern' },
-        { n: 5, name: 'Vergleichen' },
-    ];
-    const ART = { der: ['der', 'den', 'ein', 'einen'], die: ['die', 'die', 'eine', 'eine'], das: ['das', 'das', 'ein', 'ein'] };
+    const STEPS = ['Scannen', 'Zerlegen', 'Schätzen', 'Speichern', 'Vergleichen'];
+    const ART = { der: ['der', 'den', 'ein', 'einen', 'dem'], die: ['die', 'die', 'eine', 'eine', 'der'], das: ['das', 'das', 'ein', 'ein', 'dem'] };
     const aufDen = (d) => (d.article === 'der' ? 'auf den' : d.article === 'das' ? 'auf das' : 'auf die');
     const inDen = (d) => (d.article === 'der' ? 'in einen' : d.article === 'das' ? 'in ein' : 'in eine');
+    const einen = (d) => ART[d.article][3];
 
     const app = {
         state: { loaded: [], devices: {}, seq: 0 },
@@ -32,7 +28,7 @@
             this.renderAblage();
             this.renderDevices();
             this.renderHud();
-            this.go(null, 0);
+            this.go(null, 0, false);
             $('devices').addEventListener('click', (e) => {
                 const b = e.target.closest('[data-dev]');
                 if (b) this.pickDevice(b.dataset.dev);
@@ -41,7 +37,7 @@
                 const b = e.target.closest('[data-step]');
                 if (b && !b.disabled) this.go(this.flow.dev, Number(b.dataset.step));
             });
-            $('reset-btn').addEventListener('click', () => this.confirm('Alles zurücksetzen?', 'Alle geladenen Dateien, gescannten Geräte und Schätzungen werden gelöscht.', 'Zurücksetzen', 'Abbrechen').then((ok) => {
+            $('reset-btn').addEventListener('click', () => this.confirm('Alles zurücksetzen?', '<p>Alle geladenen Dateien, Geräte und Schätzungen werden gelöscht.</p>', 'Zurücksetzen', 'Abbrechen').then((ok) => {
                 if (!ok) return;
                 this.state = { loaded: [], devices: {}, seq: 0 };
                 this.save();
@@ -62,33 +58,43 @@
         },
         save() { try { localStorage.setItem(KEY, JSON.stringify(this.state)); } catch (e) { /* egal */ } },
 
-        /* ---------- Assistent ---------- */
+        /* ---------- Aufgaben-Kasten ---------- */
         say(text) {
-            const el = $('sys-text');
-            clearInterval(this._typer);
-            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = text; return; }
-            let i = 0;
-            el.textContent = '';
-            this._typer = setInterval(() => {
-                i += 2;
-                el.textContent = text.slice(0, i);
-                if (i >= text.length) clearInterval(this._typer);
-            }, 16);
+            const el = $('task-text');
+            if (el.textContent === text) return;
+            el.textContent = text;
+            const t = $('task');
+            t.classList.remove('flash');
+            void t.offsetWidth;
+            t.classList.add('flash');
         },
 
-        /* ---------- Modal ---------- */
+        /* ---------- Dialog (mit Fokusfalle) ---------- */
         confirm(title, html, yes, no) {
             return new Promise((resolve) => {
                 const m = $('modal');
                 $('modal-title').textContent = title;
                 $('modal-text').innerHTML = html;
-                $('modal-btns').innerHTML = (no ? `<button class="btn btn-ghost" data-r="0">${no}</button>` : '') + `<button class="btn btn-primary" data-r="1">${yes}</button>`;
+                $('modal-btns').innerHTML = (no ? `<button type="button" class="btn btn-ghost" data-r="0">${no}</button>` : '') + `<button type="button" class="btn btn-primary" data-r="1">${yes}</button>`;
                 m.hidden = false;
                 const prev = document.activeElement;
-                $('modal-btns').querySelector(no ? '[data-r="0"]' : '[data-r="1"]').focus();
-                const close = (r) => { m.hidden = true; m.onclick = null; document.removeEventListener('keydown', key); prev && prev.focus && prev.focus(); resolve(r); };
-                const key = (e) => { if (e.key === 'Escape') close(false); };
-                document.addEventListener('keydown', key);
+                const btns = [...$('modal-btns').querySelectorAll('button')];
+                btns[0].focus();
+                const close = (r) => {
+                    m.hidden = true; m.onclick = null;
+                    document.removeEventListener('keydown', key, true);
+                    if (prev && prev.focus && document.contains(prev)) prev.focus();
+                    resolve(r);
+                };
+                const key = (e) => {
+                    if (e.key === 'Escape') { e.preventDefault(); close(false); }
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const i = btns.indexOf(document.activeElement);
+                        btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+                    }
+                };
+                document.addEventListener('keydown', key, true);
                 m.onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) close(b.dataset.r === '1'); };
             });
         },
@@ -99,27 +105,23 @@
             this.state.lastFile = f.id;
             this.save();
             this.renderAblage();
-            if (this.flow.step === 3) this.renderStage();
-            else if (!this.flow.dev) {
-                this.renderStage();
-                this.say(`${f.name} ist geladen. Nimm jetzt ein Gerät vom Tisch und wähle es im Geräte-Hangar aus.`);
-            } else this.say(`${f.name} ist geladen.`);
+            if (this.flow.step === 3 || !this.flow.dev) this.renderStage();
         },
         renderAblage() {
             const files = this.state.loaded.map(MV.fileById);
             $('ablage').innerHTML = files.length
-                ? `<span class="ablage-label">GELADEN</span>` + files.map((f) => `<span class="chip t-${f.type}">${MV.fileIcon(f)}${esc(f.name)}<small>${U.winSize(f.bytes)}</small></span>`).join('')
-                : `<span class="ablage-label">GELADEN</span><span class="ablage-empty">noch nichts – wähle im Explorer eine Datei</span>`;
+                ? `<span class="ablage-label">Geladen:</span>` + files.map((f) => `<span class="chip">${MV.fileIcon(f)}${esc(f.name)}</span>`).join('')
+                : '';
         },
 
-        /* ---------- HUD & Hangar ---------- */
+        /* ---------- Kopfzeile & Geräte ---------- */
         doneCount() { return MV.DEVICES.filter((d) => this.state.devices[d.id] && this.state.devices[d.id].done).length; },
         renderHud() {
             $('pips').innerHTML = MV.DEVICES.map((d) => {
                 const s = this.state.devices[d.id];
-                return `<span class="pip${s && s.done ? ' done' : s ? ' half' : ''}" title="${d.name}"></span>`;
+                return `<span class="pip${s && s.done ? ' done' : ''}"></span>`;
             }).join('');
-            $('hud-count').textContent = `${this.doneCount()}/${MV.DEVICES.length}`;
+            $('hud-count').textContent = `${this.doneCount()} von ${MV.DEVICES.length}`;
         },
         icons: {},
         icon(id) {
@@ -130,10 +132,10 @@
             $('devices').innerHTML = MV.DEVICES.map((d) => {
                 const s = this.state.devices[d.id];
                 const act = this.flow.dev === d.id;
-                return `<button type="button" class="dev${act ? ' active' : ''}${s && s.done ? ' done' : ''}" data-dev="${d.id}">` +
+                return `<button type="button" class="dev${act ? ' active' : ''}${s && s.done ? ' done' : ''}" data-dev="${d.id}" aria-pressed="${act}">` +
                     `<span class="dev-ico">${this.icon(d.id)}</span>` +
                     `<span class="dev-name">${d.name}</span>` +
-                    `<span class="dev-state">${s ? (s.done ? '✓ ' : '') + U.size(s.cap) : 'nicht gescannt'}</span>` +
+                    `<span class="dev-state">${s && s.done ? '✓ geschafft' : s ? U.size(s.cap) : '&nbsp;'}</span>` +
                     `</button>`;
             }).join('');
         },
@@ -144,8 +146,8 @@
         },
 
         /* ---------- Ablauf ---------- */
-        go(dev, step) {
-            if (this.anim) { this.anim.stop && this.anim.stop(); this.anim.skip && this.anim.skip(); this.anim = null; }
+        go(dev, step, focus = true) {
+            if (this.anim) { this.anim.stop && this.anim.stop(); this.anim = null; }
             this.flow = { dev, step };
             if (dev) {
                 const s = this.state.devices[dev];
@@ -154,14 +156,22 @@
             this.renderDevices();
             this.renderStepper();
             this.renderStage();
+            if (focus) {
+                const a = document.activeElement;
+                const typing = a && (a.tagName === 'INPUT' || a.tagName === 'SELECT') && $('stage').contains(a);
+                if (!typing) { const h = $('stage-body').querySelector('h3'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } }
+            }
         },
         renderStepper() {
             const dev = this.flow.dev;
             const s = dev && this.state.devices[dev];
             const reached = s ? s.reached || 1 : 1;
-            $('stepper').innerHTML = dev ? STEPS.map((st) =>
-                `<li><button type="button" data-step="${st.n}" class="${st.n === this.flow.step ? 'cur' : st.n < this.flow.step || st.n <= reached ? 'ok' : ''}" ${st.n <= reached || st.n === 1 ? '' : 'disabled'} aria-current="${st.n === this.flow.step ? 'step' : 'false'}"><span>${st.n}</span>${st.name}</button></li>`).join('') : '';
-            $('stage-name').textContent = dev ? MV.deviceById(dev).name : 'Labor';
+            $('stage-title').textContent = dev ? MV.deviceById(dev).name : 'Labor';
+            $('stepper').innerHTML = dev ? STEPS.map((name, i) => {
+                const n = i + 1, cur = n === this.flow.step, ok = n <= reached;
+                return `<li><button type="button" data-step="${n}" class="${cur ? 'cur' : ok ? 'ok' : ''}" ${ok || n === 1 ? '' : 'disabled'} aria-current="${cur ? 'step' : 'false'}" aria-label="Schritt ${n}: ${name}">` +
+                    `<span class="dot">${n}</span><span class="lbl">${name}</span></button></li>`;
+            }).join('') : '';
         },
         renderStage() {
             const body = $('stage-body');
@@ -176,19 +186,29 @@
         renderHome(body) {
             const scanned = MV.DEVICES.filter((d) => this.state.devices[d.id]);
             const hasFile = this.state.loaded.length > 0;
+            const done = this.doneCount();
+            let h, p, arrow;
+            if (!hasFile) {
+                h = 'Los geht’s: Wie groß ist eine Datei?';
+                p = 'Im Datei-Explorer liegen Dateien. Finde heraus, wie groß eine davon ist.';
+                arrow = 'left';
+                this.say('Mach im Explorer einen Rechtsklick auf „Lied.mp3“ und wähle „Eigenschaften“.');
+            } else if (done === MV.DEVICES.length) {
+                h = 'Alle Geräte geschafft!';
+                p = 'Du kennst jetzt alle sechs Speichermedien – von der Diskette bis zur Festplatte.';
+                this.say('Super gemacht! Du kannst jedes Gerät noch einmal anklicken.');
+            } else {
+                h = done ? 'Weiter zum nächsten Gerät' : 'Jetzt kommt ein echtes Gerät';
+                p = 'Nimm ein Gerät vom Tisch und klicke es in der Geräte-Liste an.';
+                arrow = 'right';
+                this.say('Klicke in der Geräte-Liste auf das Gerät, das vor dir liegt.');
+            }
             body.innerHTML =
                 `<div class="home">` +
-                `<div class="home-hero"><p class="kicker">MISSION</p><h3>Wie groß sind Daten – und wie groß ist ihr Speicher?</h3>` +
-                `<p>Untersuche nacheinander die echten Geräte auf dem Tisch. Für jedes Gerät gibt es fünf Stationen.</p></div>` +
-                `<ol class="home-steps">` +
-                `<li class="${hasFile ? 'ok' : 'now'}"><b>Datei laden</b><span>Wähle im Datei-Explorer eine Datei, öffne mit Rechtsklick die <i>Eigenschaften</i> und trage die Größe ein.</span></li>` +
-                `<li class="${hasFile ? 'now' : ''}"><b>Gerät wählen</b><span>Hol dir ein Gerät vom Tisch und klicke es rechts im Geräte-Hangar an. Lies die Kapazität ab.</span></li>` +
-                `<li><b>Zerlegen &amp; verstehen</b><span>In der Explosionsansicht siehst du, woraus das Gerät besteht und wo die Daten liegen.</span></li>` +
-                `<li><b>Schätzen, speichern, vergleichen</b><span>Wie viele Dateien passen drauf? Und wie viele Disketten passen in eine Festplatte?</span></li>` +
-                `</ol>` +
-                (scanned.length ? `<h4 class="home-sub">Bisher gescannt</h4>` + MV.compareViz.ladder(scanned.map((d) => ({ ...d, cap: this.state.devices[d.id].cap })), []) : '') +
+                `<h3>${h}</h3><p class="lead">${p}</p>` +
+                (arrow ? `<div class="home-arrow ${arrow}" aria-hidden="true"><svg viewBox="0 0 120 40"><path d="M${arrow === 'left' ? '110 20H14M30 6L14 20l16 14' : '10 20h96M90 6l16 14-16 14'}" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>` : '') +
+                (scanned.length >= 2 ? `<h4 class="sub-h">Deine Geräte im Vergleich</h4>` + MV.compareViz.ladder(scanned.map((d) => ({ ...d, cap: this.state.devices[d.id].cap })), []) : '') +
                 `</div>`;
-            this.say(hasFile ? 'Wähle im Geräte-Hangar das Gerät, das vor dir auf dem Tisch liegt.' : 'Willkommen im Speicher-Labor! Starte im Datei-Explorer: Rechtsklick auf eine Datei → Eigenschaften → Größe ablesen.');
         },
 
         /* --- 1 Scannen --- */
@@ -196,33 +216,33 @@
             const s = this.state.devices[d.id];
             body.innerHTML =
                 `<div class="scan">` +
-                `<div class="scan-visual"><div class="scan-ico">${this.icon(d.id)}</div><div class="scan-beam" aria-hidden="true"></div></div>` +
-                `<form class="scan-form" id="scan-form" autocomplete="off">` +
-                `<p class="kicker">GERÄT SCANNEN</p>` +
-                `<h3>Wie viel passt auf ${ART[d.article][1]} ${d.name}?</h3>` +
-                `<p class="scan-hint">${d.hint}</p>` +
-                `<div class="scan-row">` +
+                `<div class="scan-visual">${this.icon(d.id)}</div>` +
+                `<form class="scan-form" id="scan-form" autocomplete="off" novalidate>` +
+                `<h3>Wie viel Speicher hat ${ART[d.article][0]} ${d.name}?</h3>` +
+                `<p class="hint">${d.hint}</p>` +
+                `<div class="row">` +
                 `<label class="sr-only" for="cap-val">Kapazität</label>` +
-                `<input id="cap-val" type="text" inputmode="decimal" placeholder="Zahl" value="${s ? esc(s.val) : ''}">` +
+                `<input id="cap-val" type="text" inputmode="decimal" placeholder="Zahl" value="${s ? esc(s.val) : ''}" aria-describedby="scan-msg">` +
                 `<label class="sr-only" for="cap-unit">Einheit</label>` +
-                `<select id="cap-unit"><option value="">Einheit</option>${['kb', 'mb', 'gb', 'tb'].map((u) => `<option value="${u}"${s && s.unit === u ? ' selected' : ''}>${u.toUpperCase()}</option>`).join('')}</select>` +
-                `<button class="btn btn-primary" type="submit">Kapazität erfassen</button>` +
+                `<select id="cap-unit" aria-describedby="scan-msg"><option value="">Einheit</option>${['kb', 'mb', 'gb', 'tb'].map((u) => `<option value="${u}"${s && s.unit === u ? ' selected' : ''}>${u.toUpperCase()}</option>`).join('')}</select>` +
                 `</div>` +
-                `<p class="scan-msg" id="scan-msg" aria-live="polite"></p>` +
+                `<p class="msg" id="scan-msg" aria-live="polite"></p>` +
+                `<div class="actions"><button class="btn btn-primary" type="submit">Weiter</button></div>` +
                 `</form></div>`;
-            this.say(`Nimm ${ART[d.article][3]} ${d.name} in die Hand und lies die Speicherkapazität ab.`);
+            this.say(`Nimm ${einen(d)} ${d.name} in die Hand. Lies ab, wie viel Speicher drauf passt, und trage es ein.`);
             $('cap-val').focus();
+            const err = (t, el) => { const m = $('scan-msg'); m.textContent = t; m.className = 'msg bad'; el.setAttribute('aria-invalid', 'true'); el.focus(); };
             $('scan-form').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const v = MV.parseNum($('cap-val').value), unit = $('cap-unit').value;
-                const msg = $('scan-msg');
-                if (!isFinite(v) || v <= 0) { msg.textContent = 'Bitte gib eine Zahl ein.'; msg.className = 'scan-msg bad'; return; }
-                if (!unit) { msg.textContent = 'Wähle noch die Einheit (KB, MB, GB oder TB).'; msg.className = 'scan-msg bad'; $('cap-unit').focus(); return; }
+                $('cap-val').setAttribute('aria-invalid', 'false'); $('cap-unit').setAttribute('aria-invalid', 'false');
+                if (!isFinite(v) || v <= 0) return err('Gib eine Zahl ein.', $('cap-val'));
+                if (!unit) return err('Wähle noch die Einheit: KB, MB, GB oder TB.', $('cap-unit'));
                 const cap = U.toBytes(v, unit);
                 const ok = cap >= d.range[0] && cap <= d.range[1];
                 const p = ok ? Promise.resolve(true) : this.confirm('Bist du sicher?',
-                    `<p><b>${esc($('cap-val').value)} ${unit.toUpperCase()}</b> ist ungewöhnlich für ${ART[d.article][3]} ${d.name}.</p><p>Typisch sind <b>${d.typical}</b>. Schau noch einmal genau hin – stimmt die Einheit?</p>`,
-                    'Ja, stimmt so', 'Nochmal nachsehen');
+                    `<p><b>${esc($('cap-val').value)} ${unit.toUpperCase()}</b> ist ungewöhnlich für ${einen(d)} ${d.name}. Normal sind <b>${d.typical}</b>.</p><p>Stimmt die Einheit?</p>`,
+                    'Ja, stimmt', 'Nochmal schauen');
                 p.then((yes) => {
                     if (!yes) { $('cap-val').focus(); return; }
                     const prev = this.state.devices[d.id] || {};
@@ -238,36 +258,32 @@
         renderExplode(body, d) {
             const xv = MV.renderExploded(MV.exploded[d.id]);
             const dataPart = xv.parts.find((p) => p.data);
-            const seenKey = d.id;
+            const unlocked = this.xvSeen.has(d.id) || (this.state.devices[d.id].reached || 0) > 2;
             body.innerHTML =
                 `<div class="xv-wrap">` +
-                `<div class="xv-toolbar"><button type="button" class="btn btn-small" id="xv-toggle" aria-pressed="false">Zerlegen</button>` +
-                `<span class="xv-legend"><i class="lg-data"></i>speichert die Daten</span>` +
-                `<span class="xv-hint">Klicke auf ein Bauteil</span></div>` +
-                `<div class="xv-main">` +
-                `<div class="xv-stage" id="xv-stage">${xv.svg}</div>` +
-                `<aside class="xv-side">` +
+                `<h3 class="sr-only">Explosionsansicht: ${d.name}</h3>` +
+                `<div class="xv-stage${unlocked ? '' : ' hint-data'}" id="xv-stage">${xv.svg}</div>` +
+                `<div class="xv-bar"><button type="button" class="btn btn-ghost" id="xv-toggle">Zerlegen</button>` +
+                (MV.exploded[d.id].note ? `<span class="xv-scale">${MV.exploded[d.id].note}</span>` : '') + `</div>` +
                 `<ol class="xv-list" id="xv-list">${xv.parts.map((p) => `<li><button type="button" data-part="${p.id}" class="${p.data ? 'is-data' : ''}"><span class="n">${p.num}</span>${p.name}</button></li>`).join('')}</ol>` +
-                `<div class="xv-info" id="xv-info" aria-live="polite"><p class="xv-info-empty">Wähle ein Bauteil aus – das <b class="pink">pink</b> markierte speichert deine Daten.</p></div>` +
-                `</aside></div>` +
-                (MV.exploded[d.id].note ? `<p class="xv-scale">⚠ ${MV.exploded[d.id].note}</p>` : `<p class="xv-scale">Vereinfachte, technisch korrekte Darstellung – Bauteile auseinandergezogen.</p>`) +
-                `<div class="step-actions"><button type="button" class="btn btn-primary" id="to-est" ${this.xvSeen.has(seenKey) || (this.state.devices[d.id].reached || 0) > 2 ? '' : 'disabled'}>Weiter zur Schätzfrage →</button>` +
-                `<span class="lock-hint" id="lock-hint">${this.xvSeen.has(seenKey) || (this.state.devices[d.id].reached || 0) > 2 ? '' : `🔒 Klicke zuerst auf das pink markierte Bauteil (${dataPart.num}) und lies, wie es Daten speichert.`}</span></div>` +
+                `<div class="xv-info" id="xv-info" aria-live="polite"><p class="muted">Klicke auf ein Bauteil. Das <b class="pink">pinke</b> Bauteil speichert deine Daten.</p></div>` +
+                `<div class="actions"><button type="button" class="btn btn-primary" id="to-est" ${unlocked ? '' : 'disabled'}>Weiter</button>` +
+                `<span class="lock-hint" id="lock-hint">${unlocked ? '' : `Klicke zuerst auf Bauteil ${dataPart.num}.`}</span></div>` +
                 `</div>`;
             const stage = $('xv-stage');
             const toggle = $('xv-toggle');
             const setExploded = (on) => {
                 stage.classList.toggle('exploded', on);
                 toggle.textContent = on ? 'Zusammenbauen' : 'Zerlegen';
-                toggle.setAttribute('aria-pressed', String(on));
             };
             toggle.addEventListener('click', () => setExploded(!stage.classList.contains('exploded')));
-            const t = setTimeout(() => setExploded(true), 700);
+            const t = setTimeout(() => setExploded(true), 600);
             const svgEl = stage.querySelector('svg');
             const fit = () => {
-                const narrow = stage.clientWidth < 560;
+                const narrow = stage.clientWidth < 820; // darunter wären die Beschriftungen kleiner als 14 px
                 svgEl.setAttribute('viewBox', narrow ? xv.vbNarrow : xv.vbWide);
                 stage.classList.toggle('narrow', narrow);
+                body.querySelector('.xv-wrap').classList.toggle('narrow', narrow);
             };
             fit();
             window.addEventListener('resize', fit);
@@ -279,18 +295,19 @@
                 if (!stage.classList.contains('exploded')) setExploded(true);
                 stage.querySelectorAll('.sel').forEach((n) => n.classList.remove('sel'));
                 stage.querySelectorAll(`[data-part="${id}"]`).forEach((n) => n.classList.add('sel'));
-                stage.classList.add('has-sel');
                 $('xv-list').querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.part === id));
+                const more = [p.info, p.how].filter(Boolean).map((x) => `<p>${x}</p>`).join('');
                 $('xv-info').innerHTML =
-                    `<p class="xv-info-num${p.data ? ' pink' : ''}">${p.num} · ${p.data ? 'DATENSPEICHER' : 'BAUTEIL'}</p>` +
-                    `<h4>${p.name}</h4>` +
-                    `<p>${p.info}</p>` +
-                    (p.how ? `<div class="xv-how${p.data ? ' is-data' : ''}"><p class="xv-how-h">${p.data ? 'So speichert es Daten' : 'Gut zu wissen'}</p><p>${p.how}</p></div>` : '');
+                    `<h4><span class="n${p.data ? ' is-data' : ''}">${p.num}</span>${p.name}</h4>` +
+                    `<p class="short">${p.short || p.info}</p>` +
+                    (p.data && p.howShort ? `<div class="xv-how"><b>So speichert es Daten:</b> ${p.howShort}</div>` : '') +
+                    (more ? `<details class="more"><summary>Mehr erfahren</summary>${more}</details>` : '');
                 if (p.data) {
-                    this.xvSeen.add(seenKey);
+                    this.xvSeen.add(d.id);
+                    stage.classList.remove('hint-data');
                     $('to-est').disabled = false;
                     $('lock-hint').textContent = '';
-                    this.say(`Genau! Hier liegen die Daten. Weiter geht's mit der Schätzfrage.`);
+                    this.say('Genau, hier liegen die Daten! Klicke auf „Weiter“.');
                 }
                 if (window.innerWidth < 900) $('xv-info').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             };
@@ -307,7 +324,7 @@
                 if (b) select(b.dataset.part);
             });
             $('to-est').addEventListener('click', () => this.go(d.id, 3));
-            this.say(`So sieht ${ART[d.article][0]} ${d.name} von innen aus. Klicke die Bauteile an – das pink leuchtende speichert deine Daten.`);
+            this.say(unlocked ? 'Schau dir die Bauteile an und klicke dann auf „Weiter“.' : `So sieht ${ART[d.article][0]} ${d.name} innen aus. Klicke auf das pink leuchtende Bauteil – dort liegen die Daten.`);
         },
 
         /* --- 3 Schätzfrage --- */
@@ -315,12 +332,13 @@
             const s = this.state.devices[d.id];
             const loaded = this.state.loaded;
             if (!loaded.length) {
-                body.innerHTML = `<div class="est est-empty"><p class="kicker">SCHÄTZFRAGE</p><h3>Erst brauchst du eine Datei!</h3>` +
-                    `<p>Wähle im Datei-Explorer eine Datei, öffne mit Rechtsklick die <b>Eigenschaften</b> und lade sie mit der richtigen Größe. Danach geht es hier automatisch weiter.</p>` +
-                    `<p class="est-tip">Passend für ${ART[d.article][3]} ${d.name}: <b>${MV.fileById(d.file).name}</b> (Ordner ${MV.FOLDERS.find((f) => f.id === MV.fileById(d.file).folder).name})</p></div>`;
+                const sug = MV.fileById(d.file);
+                body.innerHTML = `<div class="est"><h3>Zuerst brauchst du eine Datei</h3>` +
+                    `<p class="lead">Lade im Datei-Explorer eine Datei. Danach geht es hier von selbst weiter.</p>` +
+                    `<p class="hint">Gut passt: <b>${sug.name}</b> im Ordner ${MV.FOLDERS.find((f) => f.id === sug.folder).name}.</p></div>`;
                 $('explorer').classList.add('pulse');
                 setTimeout(() => $('explorer').classList.remove('pulse'), 2400);
-                this.say('Ohne Datei keine Schätzung: Lade im Datei-Explorer zuerst eine Datei.');
+                this.say(`Rechtsklick auf „${sug.name}“ → Eigenschaften → Größe unten eintragen.`);
                 return;
             }
             let fid = s.guessFile && loaded.includes(s.guessFile) ? s.guessFile : loaded.includes(d.file) ? d.file : this.state.lastFile && loaded.includes(this.state.lastFile) ? this.state.lastFile : loaded[0];
@@ -328,20 +346,19 @@
                 const f = MV.fileById(fid);
                 body.innerHTML =
                     `<div class="est">` +
-                    `<p class="kicker">SCHÄTZFRAGE</p>` +
-                    `<h3 class="est-q">Wie viele <span class="hl-c">${f.name}</span> <small>(${U.winSize(f.bytes)})</small> passen ${aufDen(d)} <span class="hl-p">${d.name}</span> <small>(${U.size(s.cap)})</small>?</h3>` +
-                    `<div class="est-vs"><div class="est-obj"><span class="est-file t-${f.type}">${MV.fileIcon(f)}</span><b>${f.name}</b><small>${U.winSize(f.bytes)}</small></div>` +
-                    `<div class="est-x">× ?</div>` +
-                    `<div class="est-obj"><span class="est-dev">${this.icon(d.id)}</span><b>${d.name}</b><small>${U.size(s.cap)}</small></div></div>` +
-                    `<div class="est-files"><span>Datei:</span>${loaded.map((id) => { const x = MV.fileById(id); return `<button type="button" class="chip t-${x.type}${id === fid ? ' on' : ''}" data-f="${id}">${MV.fileIcon(x)}${x.name}</button>`; }).join('')}</div>` +
-                    `<form class="est-form" id="est-form" autocomplete="off">` +
+                    `<h3 class="est-q">Wie viele <span class="hl-c">${f.name}</span> passen ${aufDen(d)} <span class="hl-p">${d.name}</span>?</h3>` +
+                    `<div class="est-vs"><div class="est-obj"><span class="est-file">${MV.fileIcon(f)}</span><b>${f.name}</b><span>${U.winSize(f.bytes)}</span></div>` +
+                    `<div class="est-x" aria-hidden="true">×&nbsp;?</div>` +
+                    `<div class="est-obj"><span class="est-dev">${this.icon(d.id)}</span><b>${d.name}</b><span>${U.size(s.cap)}</span></div></div>` +
+                    `<form class="est-form" id="est-form" autocomplete="off" novalidate>` +
                     `<label for="est-val">Deine Schätzung:</label>` +
-                    `<input id="est-val" type="text" inputmode="numeric" placeholder="z. B. 50">` +
-                    `<button class="btn btn-primary" type="submit">Schätzung abgeben</button>` +
-                    `</form><p class="scan-msg" id="est-msg" aria-live="polite"></p>` +
-                    `<p class="est-tip">Ohne Taschenrechner! Tipp: 1 GB = 1024 MB, 1 MB = 1024 KB.</p>` +
+                    `<input id="est-val" type="text" inputmode="numeric" placeholder="Zahl" aria-describedby="est-msg">` +
+                    `<button class="btn btn-primary" type="submit">Weiter</button>` +
+                    `</form><p class="msg" id="est-msg" aria-live="polite"></p>` +
+                    (loaded.length > 1 ? `<details class="more more-files"><summary>Andere Datei nehmen</summary><div class="chips">${loaded.map((id) => { const x = MV.fileById(id); return `<button type="button" class="chip${id === fid ? ' on' : ''}" data-f="${id}" aria-pressed="${id === fid}">${MV.fileIcon(x)}${x.name}</button>`; }).join('')}</div></details>` : '') +
                     `</div>`;
-                body.querySelector('.est-files').addEventListener('click', (e) => {
+                const mf = body.querySelector('.more-files');
+                if (mf) mf.addEventListener('click', (e) => {
                     const b = e.target.closest('[data-f]');
                     if (b) { fid = b.dataset.f; draw(); }
                 });
@@ -349,7 +366,7 @@
                 $('est-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const g = MV.parseNum($('est-val').value);
-                    if (!isFinite(g) || g < 0) { $('est-msg').textContent = 'Bitte gib eine Zahl ein.'; $('est-msg').className = 'scan-msg bad'; return; }
+                    if (!isFinite(g) || g < 0) { $('est-msg').textContent = 'Gib eine Zahl ein.'; $('est-msg').className = 'msg bad'; $('est-val').setAttribute('aria-invalid', 'true'); return; }
                     s.guess = Math.round(g);
                     s.guessFile = fid;
                     s.reached = Math.max(s.reached || 1, 4);
@@ -358,7 +375,7 @@
                 });
             };
             draw();
-            this.say('Schätze zuerst – ganz ohne Taschenrechner. Danach wird gespeichert und du siehst, ob du richtig lagst.');
+            this.say('Schätze ohne Taschenrechner! Tipp: 1 GB = 1024 MB und 1 MB = 1024 KB.');
         },
 
         /* --- 4 Speichervorgang --- */
@@ -366,22 +383,23 @@
             const s = this.state.devices[d.id];
             if (s.guess == null || !s.guessFile) return this.go(d.id, 3);
             const f = MV.fileById(s.guessFile);
-            body.innerHTML = `<div class="store"><p class="kicker">${d.verb === 'brennt' ? 'BRENNVORGANG' : 'SPEICHERVORGANG'}</p>` +
-                `<h3>${d.verb === 'brennt' ? 'Der Brenner brennt' : 'Der Computer speichert'} so viele ${f.name} wie möglich ${aufDen(d)} ${d.name}</h3>` +
+            const burn = d.verb === 'brennt';
+            body.innerHTML = `<div class="store">` +
+                `<h3>${burn ? `${ART[d.article][0][0].toUpperCase() + ART[d.article][0].slice(1)} ${d.name} wird gebrannt …` : `${ART[d.article][0][0].toUpperCase() + ART[d.article][0].slice(1)} ${d.name} wird beschrieben …`}</h3>` +
                 `<div id="fv-host"></div>` +
-                `<div class="step-actions"><button type="button" class="btn btn-ghost btn-small" id="fv-skip">Schneller ⏩</button></div>` +
-                `<div id="fv-result"></div></div>`;
-            this.say(`${d.name}: ${d.verb === 'brennt' ? 'Brennvorgang' : 'Schreibvorgang'} läuft …`);
+                `<div id="fv-result" aria-live="polite"></div>` +
+                `<div class="actions" id="fv-actions"><button type="button" class="link-btn" id="fv-skip">Schneller</button></div></div>`;
+            this.say(`Schau zu: So viele ${f.name} wie möglich kommen ${aufDen(d)} ${d.name}.`);
             const anim = MV.fillViz.run($('fv-host'), {
                 device: d, file: f, capacity: s.cap,
                 onDone: (N) => {
                     s.n = N; s.nFile = f.id; s.reached = Math.max(s.reached || 1, 5);
                     this.save();
                     this.renderStepper();
-                    const skip = $('fv-skip'); if (skip) skip.remove();
+                    $('fv-actions').innerHTML = `<button type="button" class="btn btn-primary" id="to-cmp">Weiter</button>`;
                     $('fv-result').innerHTML = this.resultCard(d, s, f, N);
                     $('to-cmp').addEventListener('click', () => this.go(d.id, 5));
-                    this.say(N ? `Fertig! Es passen genau ${U.num(N)} × ${f.name} ${aufDen(d)} ${d.name}.` : `Die Datei ist zu groß für ${ART[d.article][3]} ${d.name}!`);
+                    this.say(N ? `Es passen ${U.num(N)} × ${f.name} drauf. Wie gut war deine Schätzung?` : `Die Datei ist zu groß für ${einen(d)} ${d.name}!`);
                 },
             });
             this.anim = { stop: () => anim.cancel() };
@@ -391,7 +409,7 @@
             const g = s.guess;
             let verdict, cls;
             if (N === 0) {
-                verdict = `Passt nicht! ${f.name} ist ${U.times(f.bytes / s.cap)}-mal so groß wie ${ART[d.article][0]} ganze ${d.name}.`;
+                verdict = `Passt nicht! Die Datei ist ${U.times(f.bytes / s.cap)}-mal so groß wie ${ART[d.article][0]} ganze ${d.name}.`;
                 cls = 'bad';
             } else if (g === 0) { verdict = 'Du hast 0 geschätzt – es passt aber einiges drauf!'; cls = 'bad'; }
             else {
@@ -400,75 +418,66 @@
                 else if (r > 1) { verdict = `Du hast ${U.times(r)}-mal zu wenig geschätzt.`; cls = r < 2 ? 'mid' : 'bad'; }
                 else { verdict = `Du hast ${U.times(1 / r)}-mal zu viel geschätzt.`; cls = r > 0.5 ? 'mid' : 'bad'; }
             }
-            const rest = s.cap - N * f.bytes;
             return `<div class="result ${cls}">` +
-                `<div class="res-col"><span class="res-l">Deine Schätzung</span><span class="res-v">${U.num(g)}</span></div>` +
-                `<div class="res-col"><span class="res-l">Tatsächlich</span><span class="res-v big">${U.num(N)}</span></div>` +
+                `<div class="res-col"><span class="res-l">Geschätzt</span><span class="res-v">${U.num(g)}</span></div>` +
+                `<div class="res-col"><span class="res-l">Richtig</span><span class="res-v big">${U.num(N)}</span></div>` +
                 `<div class="res-text"><p class="res-verdict">${verdict}</p>` +
-                `<p class="res-calc">Rechnung: ${U.size(s.cap)} ÷ ${U.winSize(f.bytes)} = ${U.num(s.cap / f.bytes, 1)} → ${U.num(N)} ganze Dateien. Es bleiben ${U.size(rest)} frei.</p></div>` +
-                `<div class="res-act"><button type="button" class="btn btn-primary" id="to-cmp">Weiter zum Größenvergleich →</button></div>` +
+                `<details class="more"><summary>So rechnet man</summary><p>${U.size(s.cap)} ÷ ${U.winSize(f.bytes)} = ${U.num(s.cap / f.bytes, 1)}. Nur ganze Dateien zählen: ${U.num(N)}.</p></details></div>` +
                 `</div>`;
         },
 
-        /* --- 5 Vergleich --- */
+        /* --- 5 Vergleich: große Zahl, Flächen-Zoom, ein Satz --- */
         renderCompare(body, d) {
             const me = { ...d, cap: this.state.devices[d.id].cap };
             const others = MV.DEVICES.filter((x) => x.id !== d.id && this.state.devices[x.id])
                 .map((x) => ({ ...x, cap: this.state.devices[x.id].cap, order: this.state.devices[x.id].order || 0 }))
                 .sort((a, b) => b.order - a.order);
-            const all = [me, ...others].sort((a, b) => a.cap - b.cap);
-            let other = this._cmpWith && others.find((o) => o.id === this._cmpWith) || others[0];
+            let other = (this._cmpWith && others.find((o) => o.id === this._cmpWith)) || others[0];
 
             const draw = () => {
-                let head, tilesLegend, small, big, stackHtml = '';
+                let head, legend, small, big, sentence = '';
                 if (other) {
                     [small, big] = me.cap <= other.cap ? [me, other] : [other, me];
                     const k = big.cap / small.cap;
                     head = `<h3>Wie viele <span class="hl-p">${small.plural}</span> passen ${inDen(big)} <span class="hl-c">${big.name}</span>?</h3>` +
-                        `<p class="cmp-answer"><span class="cmp-k">${U.ratio(k)}</span> ${k >= 1.995 || k < 1 ? small.plural : small.name}</p>` +
-                        `<p class="cmp-sub">${U.size(big.cap)} ÷ ${U.size(small.cap)} = ${U.ratio(k)}</p>`;
-                    tilesLegend = `<span><i class="sq pink"></i>1 Kästchen = 1 ${small.name} (${U.size(small.cap)})</span><span><i class="sq cyan"></i>gesamte Fläche = 1 ${big.name} (${U.size(big.cap)}) = ${U.ratio(k)} Kästchen</span>`;
-                    const st = MV.compareViz.stack(small, big);
-                    stackHtml = `<div class="cmp-card"><h4>Stapel-Check</h4>${st.svg}<p>${st.text}</p></div>`;
+                        `<p class="cmp-answer"><span class="cmp-k">${U.ratio(k)}</span> ${k >= 1.995 || k < 1 ? small.plural : small.name}</p>`;
+                    legend = `1 Kästchen = 1 ${small.name}. Die ganze Fläche = 1 ${big.name}.`;
+                    sentence = MV.compareViz.stack(small, big).text;
                 } else {
                     const f = MV.fileById(this.state.devices[d.id].nFile || this.state.loaded[0] || d.file);
-                    const hint = `<p class="cmp-sub">Scanne ein zweites Gerät – dann vergleichst du hier Datenträger miteinander!</p>`;
                     if (f.bytes <= me.cap) {
-                        small = { name: f.name, plural: f.name, cap: f.bytes }; big = me;
+                        small = { name: f.name, cap: f.bytes }; big = me;
                         head = `<h3>So viele <span class="hl-p">${f.name}</span> passen ${aufDen(d)} <span class="hl-c">${d.name}</span></h3>` +
-                            `<p class="cmp-answer"><span class="cmp-k">${U.num(Math.floor(me.cap / f.bytes))}</span> ganze Dateien</p>` + hint;
-                        tilesLegend = `<span><i class="sq pink"></i>1 Kästchen = 1 × ${f.name} (${U.winSize(f.bytes)})</span><span><i class="sq cyan"></i>gesamte Fläche = ${d.name} (${U.size(me.cap)})</span>`;
+                            `<p class="cmp-answer"><span class="cmp-k">${U.num(Math.floor(me.cap / f.bytes))}</span> Dateien</p>`;
+                        legend = `1 Kästchen = 1 × ${f.name}. Die ganze Fläche = ${d.name}.`;
                     } else {
                         small = me; big = { name: f.name, cap: f.bytes };
                         head = `<h3>Wie viele <span class="hl-p">${d.plural}</span> bräuchtest du für <span class="hl-c">${f.name}</span>?</h3>` +
-                            `<p class="cmp-answer"><span class="cmp-k">${U.num(Math.ceil(f.bytes / me.cap))}</span> ${d.plural}</p>` + hint;
-                        tilesLegend = `<span><i class="sq pink"></i>1 Kästchen = 1 ${d.name} (${U.size(me.cap)})</span><span><i class="sq cyan"></i>gesamte Fläche = ${f.name} (${U.winSize(f.bytes)})</span>`;
+                            `<p class="cmp-answer"><span class="cmp-k">${U.num(Math.ceil(f.bytes / me.cap))}</span> ${d.plural}</p>`;
+                        legend = `1 Kästchen = 1 ${d.name}. Die ganze Fläche = ${f.name}.`;
                     }
+                    sentence = 'Wenn du ein zweites Gerät untersuchst, vergleichst du hier zwei Geräte miteinander.';
                 }
                 body.innerHTML =
-                    `<div class="cmp">` +
-                    `<p class="kicker">DIMENSIONSVERGLEICH</p>` +
-                    (others.length ? `<div class="est-files"><span>Vergleichen mit:</span>${others.map((o) => `<button type="button" class="chip${o.id === other.id ? ' on' : ''}" data-o="${o.id}">${o.name}</button>`).join('')}</div>` : '') +
-                    head +
-                    `<div class="cmp-grid">` +
-                    `<div class="cmp-card cmp-tiles"><h4>Flächen-Zoom</h4><canvas id="cmp-canvas" aria-label="Kachelvergleich"></canvas><div class="cmp-legend">${tilesLegend}</div><button type="button" class="btn btn-ghost btn-small" id="cmp-replay">↻ Zoom wiederholen</button></div>` +
-                    stackHtml +
-                    `<div class="cmp-card cmp-ladder"><h4>Rangliste deiner Geräte</h4>${MV.compareViz.ladder(all, [d.id, other ? other.id : ''])}</div>` +
-                    `</div>` +
-                    `<div class="step-actions"><button type="button" class="btn btn-primary" id="cmp-done">${this.state.devices[d.id].done ? 'Zurück zum Labor' : 'Gerät abschließen ✓'}</button></div>` +
+                    `<div class="cmp">` + head +
+                    `<div class="cmp-tiles"><canvas id="cmp-canvas" role="img" aria-label="${legend}"></canvas><p class="cmp-legend"><i class="sq pink" aria-hidden="true"></i>${legend}</p></div>` +
+                    `<p class="cmp-sentence">${sentence}</p>` +
+                    (others.length > 1 ? `<details class="more"><summary>Mit einem anderen Gerät vergleichen</summary><div class="chips">${others.map((o) => `<button type="button" class="chip${o.id === other.id ? ' on' : ''}" data-o="${o.id}" aria-pressed="${o.id === other.id}">${o.name}</button>`).join('')}</div></details>` : '') +
+                    `<div class="actions"><button type="button" class="btn btn-primary" id="cmp-done">${this.state.devices[d.id].done ? 'Fertig' : 'Gerät geschafft ✓'}</button>` +
+                    `<button type="button" class="link-btn" id="cmp-replay">Zoom noch einmal</button></div>` +
                     `</div>`;
                 const run = () => { if (this.anim) this.anim.stop(); this.anim = MV.compareViz.tiles($('cmp-canvas'), small, big); };
                 requestAnimationFrame(run);
                 $('cmp-replay').addEventListener('click', run);
-                const o = body.querySelector('.est-files');
+                const o = body.querySelector('.more .chips');
                 if (o) o.addEventListener('click', (e) => {
                     const b = e.target.closest('[data-o]');
-                    if (b) { this._cmpWith = b.dataset.o; other = others.find((x) => x.id === b.dataset.o); draw(); }
+                    if (b) { this._cmpWith = b.dataset.o; other = others.find((x) => x.id === b.dataset.o); draw(); body.querySelector('.more').open = true; }
                 });
                 $('cmp-done').addEventListener('click', () => this.finishDevice(d));
             };
             draw();
-            this.say(other ? `Wie viele ${me.cap <= other.cap ? me.plural : other.plural} passen hinein? Schau dir den Zoom und den Stapel an!` : `Das ist dein erstes Gerät. Scanne ein weiteres, um Datenträger zu vergleichen.`);
+            this.say(other ? 'Schau dir den Zoom an: Ein pinkes Kästchen ist das kleinere Gerät.' : 'Schau dir an, wie viele Dateien insgesamt drauf passen.');
         },
 
         finishDevice(d) {
@@ -480,11 +489,8 @@
             this.go(null, 0);
             if (first && this.doneCount() === MV.DEVICES.length) {
                 document.body.classList.add('all-done');
-                this.confirm('ALLE SYSTEME GESCANNT', `<p>Du hast alle ${MV.DEVICES.length} Speichermedien untersucht – von der Diskette bis zur Festplatte. Du bist jetzt Speicher-Expert*in!</p>` +
-                    MV.compareViz.ladder(MV.DEVICES.map((x) => ({ ...x, cap: this.state.devices[x.id].cap })), []), 'Weiter');
-                this.say('Mission erfüllt: Alle Geräte gescannt!');
-            } else if (first) {
-                this.say(`${d.name} abgeschlossen (${this.doneCount()}/${MV.DEVICES.length}). Nimm das nächste Gerät vom Tisch!`);
+                this.confirm('Alle Geräte geschafft!', `<p>Du hast alle ${MV.DEVICES.length} Speichermedien untersucht – von der Diskette bis zur Festplatte.</p>` +
+                    MV.compareViz.ladder(MV.DEVICES.map((x) => ({ ...x, cap: this.state.devices[x.id].cap })), []), 'Super!');
             }
         },
     };

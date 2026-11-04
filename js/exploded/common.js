@@ -327,7 +327,7 @@
             const side = p.side || (a[0] < VB_W / 2 ? 'L' : 'R');
             sides[side].push({ p, a, y: a[1] });
         });
-        const GAP = 46, YMIN = 26, YMAX = H - 22;
+        const GAP = 40, YMIN = 26, YMAX = H - 22;
         Object.values(sides).forEach((list) => {
             list.sort((u, v) => u.y - v.y);
             for (let i = 0; i < list.length; i++) {
@@ -353,8 +353,7 @@
                     `<circle class="xv-dot" cx="${f(a[0])}" cy="${f(a[1])}" r="3.6"/>` +
                     `<circle class="xv-badge" cx="${f(bX)}" cy="${f(y)}" r="12"/>` +
                     `<text class="xv-badge-t" x="${f(bX)}" y="${f(y + 4.5)}" text-anchor="middle">${p.num}</text>` +
-                    `<text class="xv-name" x="${f(tX)}" y="${f(y + (p.sub ? -1 : 5))}" text-anchor="${anchorTxt}">${p.name}</text>` +
-                    (p.sub ? `<text class="xv-sub" x="${f(tX)}" y="${f(y + 15)}" text-anchor="${anchorTxt}">${p.sub}</text>` : '') +
+                    `<text class="xv-name" x="${f(tX)}" y="${f(y + 6)}" text-anchor="${anchorTxt}">${p.name}</text>` +
                     `</g>`;
                 markers += `<g class="xv-marker${cls}" data-part="${p.id}"><circle cx="${f(a[0])}" cy="${f(a[1])}" r="17"/><text x="${f(a[0])}" y="${f(a[1] + 7)}" text-anchor="middle">${p.num}</text></g>`;
             });
@@ -382,7 +381,7 @@
             svg,
             vbWide: `0 0 ${VB_W} ${H}`,
             vbNarrow: `${f(nx0)} 0 ${f(nx1 - nx0)} ${H}`,
-            parts: byY.map((p) => ({ id: p.id, num: p.num, name: p.name, sub: p.sub, info: p.info, how: p.how, data: !!p.data })),
+            parts: byY.map((p) => ({ id: p.id, num: p.num, name: p.name, sub: p.sub, short: p.short, howShort: p.howShort, info: p.info, how: p.how, data: !!p.data })),
             height: H,
         };
     }

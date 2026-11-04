@@ -16,7 +16,8 @@
             if (!bytes) return '0 Byte';
             let i = Math.min(UNITS.length - 1, Math.floor(Math.log(bytes) / Math.log(K)));
             if (i < 0) i = 0;
-            const v = bytes / K ** i;
+            let v = bytes / K ** i;
+            if (v >= 1000 && i > 0 && i < UNITS.length - 1) { i++; v /= K; } // „1.023 GB“ → „1,00 TB“
             if (i === 0) return num(v) + ' Byte';
             const d = v >= 100 ? 0 : v >= 10 ? Math.min(1, digits) : digits;
             return num(v, d) + ' ' + UNITS[i];

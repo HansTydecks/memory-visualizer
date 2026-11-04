@@ -36,7 +36,7 @@
             const sc = new MV.Scene(2.8, 20);
 
             sc.part({
-                id: 'poly', name: 'Polycarbonat-Scheibe', sub: '1,2 mm, glasklar',
+                id: 'poly', short: 'Glasklarer Kunststoff, 1,2 mm dick. Der Laser leuchtet von unten hindurch.', name: 'Polycarbonat-Scheibe', sub: '1,2 mm, glasklar',
                 info: 'Fast die ganze CD besteht aus diesem glasklaren Kunststoff. In seine Oberseite ist eine hauchfeine Rille als Spirale gepresst – die Spur, der der Laser folgt. Die Spurringe liegen nur 1,6 Tausendstel Millimeter auseinander; ausgerollt wäre die Spirale über 5 km lang.',
                 how: 'Der Laser leuchtet von unten durch diesen Kunststoff hindurch auf die Datenschicht. Kleine Kratzer auf der Unterseite liegen deshalb unscharf „neben“ dem Lichtpunkt und stören oft kaum.',
                 anchor: [...L(R), 1.2], side: 'L', explode: [0, 0, 0],
@@ -46,7 +46,7 @@
                 return g;
             });
             sc.part({
-                id: 'dye', name: 'Farbstoffschicht', sub: 'hier liegen die Daten', data: true,
+                id: 'dye', short: 'Eine hauchdünne Farbschicht in einer spiralförmigen Rille.', howShort: 'Der Laser des Brenners färbt winzige Punkte dunkel. Hell und dunkel ergeben die Nullen und Einsen.', name: 'Farbstoffschicht', sub: 'hier liegen die Daten', data: true,
                 info: 'Eine hauchdünne Schicht aus organischem Farbstoff, die in die Spiralrille gegossen ist. Sie liegt direkt unter der Spiegelschicht – also viel näher an der Oberseite (dem Etikett) als an der Unterseite.',
                 how: 'Beim Brennen erhitzt ein Laser (780 nm, unsichtbares Infrarot) den Farbstoff an winzigen Stellen. Dort verfärbt er sich dunkel und wirft weniger Licht zurück. Beim Lesen tastet ein schwächerer Laser die Spur ab: Aus dem Wechsel zwischen hell und dunkel macht das Laufwerk Nullen und Einsen. Bei gekauften Musik-CDs sind die Daten stattdessen als winzige Vertiefungen (Pits) ins Plastik gepresst.',
                 anchor: [...L(59), 2.55], side: 'L', explode: [0, 0, 38],
@@ -56,24 +56,24 @@
                 return g;
             });
             sc.part({
-                id: 'refl', name: 'Reflexionsschicht', sub: 'Metall-Spiegel',
+                id: 'refl', short: 'Ein hauchdünner Metallspiegel. Er wirft das Laserlicht zurück.', name: 'Reflexionsschicht', sub: 'Metall-Spiegel',
                 info: 'Ein extrem dünner Metallfilm aus Silber, Gold oder Aluminium – ein Spiegel. Er wirft das Laserlicht zurück zum Lesekopf im Laufwerk. Ohne Spiegel käme kein Licht zurück und das Laufwerk könnte nichts lesen.',
                 anchor: [...Rt(59.3), 2.8], side: 'R', explode: [0, 0, 74],
             }, (s) => s.cyl(CX, CY, 2.7, 59.3, 0.2, M.steel, { hole: 22, topFill: silver(s) }));
             sc.part({
-                id: 'lacq', name: 'Schutzlack', sub: 'ca. 0,01 mm',
+                id: 'lacq', short: 'Dünner Lack, der den Spiegel darunter vor Kratzern schützt.', name: 'Schutzlack', sub: 'ca. 0,01 mm',
                 info: 'Eine dünne, durchsichtige Lackschicht. Sie schützt den empfindlichen Metallspiegel vor Kratzern, Luft und Feuchtigkeit. Weil die Daten direkt darunter liegen, ist ein Kratzer auf der Oberseite viel gefährlicher als einer auf der Unterseite!',
                 anchor: [...Rt(59.6), 3], side: 'R', explode: [0, 0, 108],
             }, (s) => s.cyl(CX, CY, 2.9, 59.6, 0.2, M.glass, { hole: 19, topFill: 'rgba(190,140,255,0.22)', sideFill: 'rgba(190,140,255,0.35)' }));
             sc.part({
-                id: 'label', name: 'Etikett / Aufdruck', sub: 'Oberseite',
+                id: 'label', short: 'Die bedruckte Oberseite. Nur mit weichem Stift beschriften!', name: 'Etikett / Aufdruck', sub: 'Oberseite',
                 info: 'Die bedruckte Oberseite, auf der du die CD beschriften kannst – aber nur mit weichem Filzstift, nie mit Kuli! Ein harter Stift kann durch Lack und Spiegel bis in die Datenschicht drücken.',
                 anchor: [...L(59), 3.2], side: 'L', explode: [0, 0, 144],
             }, (s) => {
                 let g = s.cyl(CX, CY, 3.1, 59, 0.15, M.plasticL, { hole: 17, topFill: s.linGrad([[0, '#2a1d4d'], [0.5, '#16264a'], [1, '#1d3d55']], 0, 0, 1, 1) });
                 g += s.circ(CX, CY, 3.26, 50, 'fill="none" stroke="#f9f002" stroke-opacity=".6" stroke-width="1.2"');
                 g += s.circ(CX, CY, 3.26, 24, 'fill="none" stroke="#3fd8ff" stroke-opacity=".5" stroke-width="1"');
-                g += s.flatText(CX - 24, CY + 36, 3.27, 'CD-R · 700 MB · 80 min', 9.5, 'fill="#e9f2ff" font-family="Orbitron, monospace" font-weight="700"');
+                g += s.flatText(CX - 24, CY + 36, 3.27, 'CD-R · 700 MB · 80 min', 9.5, 'fill="#e9f2ff" font-family="Lexend, system-ui, sans-serif" font-weight="700"');
                 return g;
             });
             laser(sc, 0, 38 + 2.7, '780 nm', '#ff4d4d', 'Infrarot-Laser');
@@ -88,7 +88,7 @@
             const sc = new MV.Scene(2.8, 20);
 
             sc.part({
-                id: 'sub', name: 'Trägerscheibe', sub: '0,6 mm, mit Spurrille',
+                id: 'sub', short: 'Untere Kunststoffscheibe mit der Spurrille. Der Laser leuchtet hindurch.', name: 'Trägerscheibe', sub: '0,6 mm, mit Spurrille',
                 info: 'Die untere Hälfte der DVD: 0,6 mm glasklarer Kunststoff mit der eingepressten Spiralrille. Der Laser leuchtet von unten hindurch.',
                 how: 'Weil die Daten nur 0,6 mm tief liegen (bei der CD 1,2 mm), kann der Laser seinen Lichtpunkt schärfer bündeln – ein Grund, warum mehr Daten auf die DVD passen.',
                 anchor: [...L(R), 0.7], side: 'L', explode: [0, 0, 0],
@@ -98,7 +98,7 @@
                 return g;
             });
             sc.part({
-                id: 'dye', name: 'Farbstoffschicht', sub: 'hier liegen die Daten', data: true,
+                id: 'dye', short: 'Eine Farbschicht genau in der Mitte der DVD.', howShort: 'Wie bei der CD färbt ein Laser winzige Punkte – ein roter Laser macht aber kleinere Punkte. So passt etwa 7-mal so viel drauf.', name: 'Farbstoffschicht', sub: 'hier liegen die Daten', data: true,
                 info: 'Wie bei der CD-R eine hauchdünne Farbstoffschicht in der Spiralrille – sie liegt genau in der Mitte der DVD, zwischen den beiden Kunststoffscheiben.',
                 how: 'Ein roter Laser (650 nm) verfärbt beim Brennen winzige Stellen; beim Lesen ergibt der Wechsel zwischen hell und dunkel die Nullen und Einsen. Rotes Licht lässt sich auf einen kleineren Punkt bündeln als Infrarot: Die Punkte sind kleiner und die Spurringe liegen mit 0,74 statt 1,6 Tausendstel Millimetern mehr als doppelt so dicht. So passen etwa 7-mal so viele Daten drauf wie auf eine CD.',
                 anchor: [...L(58.5), 1.55], side: 'L', explode: [0, 0, 38],
@@ -108,24 +108,24 @@
                 return g;
             });
             sc.part({
-                id: 'refl', name: 'Reflexionsschicht', sub: 'Silber-Spiegel',
+                id: 'refl', short: 'Hauchdünner Silberspiegel, wirft das Laserlicht zurück.', name: 'Reflexionsschicht', sub: 'Silber-Spiegel',
                 info: 'Ein hauchdünner Spiegel aus einer Silberlegierung. Er wirft das Laserlicht zurück zum Lesekopf.',
                 anchor: [...Rt(59), 1.8], side: 'R', explode: [0, 0, 74],
             }, (s) => s.cyl(CX, CY, 1.7, 59, 0.2, M.steel, { hole: 22, topFill: silver(s) }));
             sc.part({
-                id: 'glue', name: 'Klebeschicht', sub: 'verbindet beide Hälften',
+                id: 'glue', short: 'Kleber, der die zwei Hälften der DVD verbindet.', name: 'Klebeschicht', sub: 'verbindet beide Hälften',
                 info: 'Ein durchsichtiger Kleber verbindet die beiden 0,6-mm-Scheiben. Eine DVD ist also ein „Sandwich“ – die Daten liegen geschützt in der Mitte.',
                 anchor: [...Rt(59.5), 2.05], side: 'R', explode: [0, 0, 108],
             }, (s) => s.cyl(CX, CY, 1.9, 59.5, 0.3, M.glass, { hole: 18, topFill: 'rgba(249,240,2,0.16)', sideFill: 'rgba(249,240,2,0.3)' }));
             sc.part({
-                id: 'dummy', name: 'Deckscheibe', sub: '0,6 mm, bedruckt',
+                id: 'dummy', short: 'Obere Kunststoffscheibe, 0,6 mm dick, mit Aufdruck.', name: 'Deckscheibe', sub: '0,6 mm, bedruckt',
                 info: 'Die obere Hälfte: noch einmal 0,6 mm Kunststoff. Sie macht die DVD stabil und schützt die Daten von oben. Darauf ist das Etikett gedruckt.',
                 anchor: [...L(R), 2.9], side: 'L', explode: [0, 0, 144],
             }, (s) => {
                 let g = s.cyl(CX, CY, 2.2, R, 1.4, M.glass, { hole: HOLE, topFill: s.linGrad([[0, '#1c1640'], [0.5, '#251a55'], [1, '#13314a']], 0, 0, 1, 1), sideFill: 'rgba(120,210,255,0.28)' });
                 g += s.circ(CX, CY, 3.61, 52, 'fill="none" stroke="#ff2a6d" stroke-opacity=".55" stroke-width="1.2"');
                 g += s.circ(CX, CY, 3.61, 20, 'fill="none" stroke="#3fd8ff" stroke-opacity=".5" stroke-width="1"');
-                g += s.flatText(CX - 14, CY + 34, 3.62, 'DVD-R · 4.7 GB', 10, 'fill="#e9f2ff" font-family="Orbitron, monospace" font-weight="700"');
+                g += s.flatText(CX - 14, CY + 34, 3.62, 'DVD-R · 4.7 GB', 10, 'fill="#e9f2ff" font-family="Lexend, system-ui, sans-serif" font-weight="700"');
                 return g;
             });
             laser(sc, 0, 38 + 1.7, '650 nm', '#ff3030', 'Roter Laser');

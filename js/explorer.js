@@ -1,15 +1,18 @@
-/* Simulierter Datei-Explorer mit Kontextmenü und Eigenschaften-Dialog. */
+/* Simulierter Datei-Explorer im Stil von Windows 11 – mit Kontextmenü und Eigenschaften-Dialog. */
 (function () {
     const MV = window.MV;
     const U = MV.units;
     const $ = (id) => document.getElementById(id);
 
+    /* Symbole in Windows-Optik (farbig auf hellem Grund) */
     const ICONS = {
-        doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l4 4v16H6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 2v4h4M9 11h6M9 14h6M9 17h4" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>',
-        img: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 18l5-6 4 4 2-2 3 4" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="16" cy="9" r="1.6" fill="currentColor"/></svg>',
-        music: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6.5" cy="18" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="16" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-        video: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M17 10l5-3v10l-5-3z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-        folder: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h7l2 2h11v11H2z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+        doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z" fill="#fff" stroke="#6b7a90" stroke-width="1.2"/><path d="M14 2.5V7h4.5" fill="#e8edf4" stroke="#6b7a90" stroke-width="1.2"/><path d="M8.5 11h7.5M8.5 14h7.5M8.5 17h5" stroke="#2b7cd3" stroke-width="1.3"/></svg>',
+        img: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="1.5" fill="#fff" stroke="#6b7a90" stroke-width="1.2"/><path d="M4.5 18l5-5.5 3.5 3.5 2-2 4.5 4" fill="#57b05b" stroke="#3c8a40" stroke-width="1"/><circle cx="15.5" cy="9" r="1.8" fill="#f5b400"/></svg>',
+        music: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.5l10-2v12" fill="none" stroke="#c2477d" stroke-width="1.8"/><circle cx="6.5" cy="17.5" r="2.7" fill="#e05a99"/><circle cx="16.5" cy="15.5" r="2.7" fill="#e05a99"/></svg>',
+        video: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="1.5" fill="#7a5af5" stroke="#5a3fd1" stroke-width="1"/><path d="M16.5 10l5-3v10l-5-3z" fill="#9b84ff" stroke="#5a3fd1" stroke-width="1"/></svg>',
+        folder: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5a1.5 1.5 0 0 1 1.5-1.5h5l2 2h9a1.5 1.5 0 0 1 1.5 1.5v9.5a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5z" fill="#ffc83d" stroke="#e0a526" stroke-width="1"/><path d="M2.5 9.5h19" stroke="#e0a526" stroke-width="1"/></svg>',
+        props: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" fill="#fff" stroke="#5f6b7a" stroke-width="1.3"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#005fb8" stroke-width="1.5"/></svg>',
+        open: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6M5 5v14h14v-6M13 5h6v6M19 5l-8 8" fill="none" stroke="#5f6b7a" stroke-width="1.5"/></svg>',
     };
     const typeIcon = { text: 'doc', image: 'img', music: 'music', video: 'video' };
     MV.fileIcon = (f) => ICONS[typeIcon[f.type]];
@@ -17,13 +20,14 @@
     function parseNum(str) {
         const s = String(str).trim().replace(/\s/g, '');
         if (!s) return NaN;
-        // „1.234,5“ oder „1,5“ oder „1.5“
         let t = s;
         if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
         else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
         return Number(t);
     }
     MV.parseNum = parseNum;
+
+    const onDisk = (b) => Math.ceil(b / 4096) * 4096;
 
     class Explorer {
         constructor(opts) {
@@ -36,68 +40,90 @@
             this.bind();
         }
 
+        folderName(id = this.folder) { return MV.FOLDERS.find((f) => f.id === id).name; }
+
         renderSide() {
             $('win-side').innerHTML = MV.FOLDERS.map((f) =>
-                `<button type="button" class="side-item${f.id === this.folder ? ' active' : ''}" data-folder="${f.id}">${ICONS.folder}<span>${f.name}</span></button>`).join('');
+                `<button type="button" class="side-item${f.id === this.folder ? ' active' : ''}" data-folder="${f.id}" aria-current="${f.id === this.folder}">${ICONS.folder}<span>${f.name}</span></button>`).join('');
         }
 
-        renderList() {
+        renderList(focusId) {
             const files = MV.FILES.filter((f) => f.folder === this.folder);
-            const folder = MV.FOLDERS.find((f) => f.id === this.folder);
-            $('win-path').textContent = `C:\\Schule\\Tauschordner\\ausgeteilt\\${folder.name}`;
-            $('win-list').innerHTML = `<div class="list-head"><span>Name</span></div>` + files.map((f) =>
-                `<div class="file-row${this.sel === f.id ? ' sel' : ''}${this.isLoaded(f.id) ? ' loaded' : ''}" role="option" tabindex="0" aria-selected="${this.sel === f.id}" data-file="${f.id}">` +
-                `<span class="fr-ico t-${f.type}">${MV.fileIcon(f)}</span>` +
-                `<span class="fr-name">${f.name}</span>` +
-                `<span class="fr-kind">${f.kind.split(' (')[0]}</span>` +
-                `<button type="button" class="fr-more" data-more="${f.id}" aria-label="Menü für ${f.name}">⋯</button>` +
+            const name = this.folderName();
+            $('win-tab').textContent = name;
+            $('win-path').innerHTML = ['Schule', 'Tauschordner', name].map((p) => `<span>${p}</span>`).join('<i aria-hidden="true">›</i>');
+            const hasSel = files.some((f) => f.id === this.sel);
+            $('win-list').innerHTML = `<div class="list-head" aria-hidden="true"><span>Name</span></div>` + files.map((f, i) =>
+                `<div class="file-row${this.sel === f.id ? ' sel' : ''}" role="option" tabindex="${this.sel === f.id || (!hasSel && i === 0) ? 0 : -1}" aria-selected="${this.sel === f.id}" data-file="${f.id}">` +
+                `<span class="fr-ico">${MV.fileIcon(f)}</span>` +
+                `<span class="fr-name">${f.name}${this.isLoaded(f.id) ? '<span class="fr-ok" aria-label="geladen"> ✓</span>' : ''}</span>` +
                 `</div>`).join('');
-            $('win-status').textContent = `${files.length} Elemente` + (this.sel ? ` · 1 Element ausgewählt` : ' · Rechtsklick auf eine Datei → Eigenschaften');
+            $('win-status').textContent = `${files.length} Elemente` + (hasSel ? '   |   1 Element ausgewählt' : '');
+            $('cmd-props').disabled = !hasSel;
+            if (focusId) { const r = $('win-list').querySelector(`[data-file="${focusId}"]`); r && r.focus(); }
         }
 
-        select(id) {
+        select(id, focus) {
             this.sel = id;
-            this.renderList();
+            this.renderList(focus ? id : null);
             const f = MV.fileById(id);
             $('loader-file').textContent = f.name;
             ['loader-size', 'loader-unit', 'loader-btn'].forEach((i) => ($(i).disabled = false));
-            $('loader-msg').textContent = '';
-            $('loader-msg').className = 'loader-msg';
+            this.msg('', '');
+        }
+
+        msg(text, cls) {
+            const m = $('loader-msg');
+            m.textContent = text;
+            m.className = 'loader-msg' + (cls ? ' ' + cls : '');
+            $('loader-size').setAttribute('aria-invalid', cls === 'bad' ? 'true' : 'false');
         }
 
         openCtx(id, x, y) {
             this.select(id);
             const ctx = $('ctx');
-            const win = ctx.parentElement.getBoundingClientRect();
+            const win = $('win').getBoundingClientRect();
             ctx.hidden = false;
             const w = ctx.offsetWidth, h = ctx.offsetHeight;
             ctx.style.left = Math.max(4, Math.min(x - win.left, win.width - w - 4)) + 'px';
             ctx.style.top = Math.max(4, Math.min(y - win.top, win.height - h - 4)) + 'px';
             ctx.querySelector('[data-act="props"]').focus();
         }
-        closeCtx() { $('ctx').hidden = true; }
+        closeCtx(refocus) {
+            if ($('ctx').hidden) return;
+            $('ctx').hidden = true;
+            if (refocus && this.sel) this.renderList(this.sel);
+        }
 
         openProps(id) {
             const f = MV.fileById(id);
+            if (!f) return;
+            this.closeCtx();
             const box = $('props');
+            const where = `C:\\Schule\\Tauschordner\\${this.folderName(f.folder)}`;
             box.innerHTML =
-                `<div class="props-bar"><span id="props-title">Eigenschaften von ${f.name}</span><button type="button" class="props-x" data-close aria-label="Schließen">×</button></div>` +
-                `<div class="props-tabs"><span class="on">Allgemein</span><span>Details</span><span>Sicherheit</span></div>` +
-                `<div class="props-body">` +
-                `<div class="props-file"><span class="fr-ico big t-${f.type}">${MV.fileIcon(f)}</span><span>${f.name}</span></div>` +
+                `<div class="props-bar"><span class="props-ico">${MV.fileIcon(f)}</span><span id="props-title">Eigenschaften von ${f.name}</span><button type="button" class="props-x" data-close aria-label="Schließen">✕</button></div>` +
+                `<div class="props-tabs" aria-hidden="true"><span class="on">Allgemein</span><span>Sicherheit</span><span>Details</span><span>Vorgängerversionen</span></div>` +
+                `<div class="props-page">` +
+                `<div class="props-file"><span class="fr-ico big">${MV.fileIcon(f)}</span><span class="props-namebox">${f.name}</span></div>` +
                 `<dl>` +
                 `<dt>Dateityp:</dt><dd>${f.kind}</dd>` +
                 `<dt>Öffnen mit:</dt><dd>${f.app}</dd>` +
-                `<dt class="sep">Ort:</dt><dd class="sep">C:\\Schule\\Tauschordner\\ausgeteilt\\${MV.FOLDERS.find((x) => x.id === f.folder).name}</dd>` +
-                `<dt class="hl">Größe:</dt><dd class="hl">${U.winSize(f.bytes)} (${U.num(f.bytes)} Bytes)</dd>` +
+                `<dt class="sep">Ort:</dt><dd class="sep">${where}</dd>` +
+                `<dt>Größe:</dt><dd>${U.winSize(f.bytes)} (${U.num(f.bytes)} Bytes)</dd>` +
+                `<dt>Größe auf Datenträger:</dt><dd>${U.winSize(onDisk(f.bytes))} (${U.num(onDisk(f.bytes))} Bytes)</dd>` +
                 `<dt class="sep">Erstellt:</dt><dd class="sep">${f.date}</dd>` +
                 `</dl></div>` +
-                `<div class="props-foot"><button type="button" class="btn btn-small" data-close>OK</button></div>`;
+                `<div class="props-foot"><button type="button" class="wbtn wbtn-primary" data-close>OK</button><button type="button" class="wbtn" data-close>Abbrechen</button><button type="button" class="wbtn" disabled>Übernehmen</button></div>`;
             box.hidden = false;
-            box.querySelector('.props-foot [data-close]').focus();
-            MV.app && MV.app.say(`Lies die Größe ab und trage sie unten bei „Datei laden“ ein – Zahl UND Einheit!`);
+            box.querySelector('.wbtn-primary').focus();
+            MV.app && MV.app.say('Lies in der Zeile „Größe“ ab, wie groß die Datei ist. Trage Zahl und Einheit unten ein.');
         }
-        closeProps() { $('props').hidden = true; }
+        closeProps() {
+            if ($('props').hidden) return;
+            $('props').hidden = true;
+            $('loader-size').focus();
+        }
 
         bind() {
             $('win-side').addEventListener('click', (e) => {
@@ -110,19 +136,11 @@
             });
             const list = $('win-list');
             list.addEventListener('click', (e) => {
-                const more = e.target.closest('[data-more]');
-                if (more) {
-                    const r = more.getBoundingClientRect();
-                    this.openCtx(more.dataset.more, r.left, r.bottom);
-                    e.stopPropagation();
-                    return;
-                }
                 const row = e.target.closest('[data-file]');
-                if (row) { this.select(row.dataset.file); this.closeCtx(); }
+                if (row) { this.select(row.dataset.file, true); this.closeCtx(); }
             });
             list.addEventListener('dblclick', (e) => {
-                const row = e.target.closest('[data-file]');
-                if (row) this.say('open');
+                if (e.target.closest('[data-file]')) this.hintOpen();
             });
             list.addEventListener('contextmenu', (e) => {
                 const row = e.target.closest('[data-file]');
@@ -130,42 +148,64 @@
                 e.preventDefault();
                 this.openCtx(row.dataset.file, e.clientX, e.clientY);
             });
+            // langes Drücken auf Touch-Geräten = Rechtsklick (wie unter Windows)
+            let press;
+            list.addEventListener('pointerdown', (e) => {
+                const row = e.target.closest('[data-file]');
+                if (!row || e.pointerType === 'mouse') return;
+                press = setTimeout(() => this.openCtx(row.dataset.file, e.clientX, e.clientY), 550);
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => list.addEventListener(t, () => clearTimeout(press)));
+
             list.addEventListener('keydown', (e) => {
                 const row = e.target.closest('[data-file]');
                 if (!row) return;
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.select(row.dataset.file); }
+                const id = row.dataset.file;
+                if (e.key === 'Enter' && e.altKey) { e.preventDefault(); this.select(id); this.openProps(id); return; }
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.select(id, true); return; }
                 if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
                     e.preventDefault();
                     const r = row.getBoundingClientRect();
-                    this.openCtx(row.dataset.file, r.left + 40, r.bottom);
+                    this.openCtx(id, r.left + 40, r.bottom);
+                    return;
                 }
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                     e.preventDefault();
                     const rows = [...list.querySelectorAll('.file-row')];
-                    const i = rows.indexOf(row) + (e.key === 'ArrowDown' ? 1 : -1);
-                    if (rows[i]) { this.select(rows[i].dataset.file); list.querySelector(`[data-file="${rows[i].dataset.file}"]`).focus(); }
+                    const next = rows[rows.indexOf(row) + (e.key === 'ArrowDown' ? 1 : -1)];
+                    if (next) this.select(next.dataset.file, true);
                 }
             });
-            $('ctx').addEventListener('click', (e) => {
+            $('cmd-props').addEventListener('click', () => this.openProps(this.sel));
+
+            const ctx = $('ctx');
+            ctx.addEventListener('click', (e) => {
                 const b = e.target.closest('[data-act]');
                 if (!b) return;
-                this.closeCtx();
                 if (b.dataset.act === 'props') this.openProps(this.sel);
-                else this.say('open');
+                else { this.closeCtx(true); this.hintOpen(); }
             });
-            $('ctx').addEventListener('keydown', (e) => { if (e.key === 'Escape') this.closeCtx(); });
-            document.addEventListener('click', (e) => { if (!e.target.closest('#ctx')) this.closeCtx(); });
-            $('props').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) this.closeProps(); });
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.closeCtx(); this.closeProps(); } });
+            ctx.addEventListener('keydown', (e) => {
+                const items = [...ctx.querySelectorAll('[role="menuitem"]')];
+                const i = items.indexOf(document.activeElement);
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+                } else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); this.closeCtx(true); }
+            });
+            document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#ctx')) this.closeCtx(); });
 
-            $('loader').addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.tryLoad();
+            const props = $('props');
+            props.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) this.closeProps(); });
+            props.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { e.preventDefault(); this.closeProps(); }
             });
+
+            $('loader').addEventListener('submit', (e) => { e.preventDefault(); this.tryLoad(); });
         }
 
-        say(kind) {
-            if (kind === 'open') MV.app && MV.app.say('Öffnen geht hier nicht – wir brauchen nur die Größe. Rechtsklick → Eigenschaften!');
+        hintOpen() {
+            MV.app && MV.app.say('Öffnen brauchen wir nicht. Mach einen Rechtsklick auf die Datei und wähle „Eigenschaften“.');
         }
 
         tryLoad() {
@@ -173,23 +213,22 @@
             if (!f) return;
             const v = parseNum($('loader-size').value);
             const unit = $('loader-unit').value;
-            const msg = $('loader-msg');
-            const bad = (t) => { msg.textContent = t; msg.className = 'loader-msg bad'; $('loader-size').focus(); };
-            if (!isFinite(v) || v <= 0) return bad('Bitte gib eine Zahl ein, z. B. 4,11.');
+            const bad = (t) => { this.msg(t, 'bad'); $('loader-size').focus(); };
+            if (!isFinite(v) || v <= 0) return bad('Gib eine Zahl ein, zum Beispiel 4,11.');
             const entered = U.toBytes(v, unit);
             const close = (a, b) => Math.abs(a / b - 1) <= 0.03;
             if (close(entered, f.bytes)) {
-                msg.textContent = `✓ ${f.name} geladen: ${U.winSize(f.bytes)}`;
-                msg.className = 'loader-msg ok';
+                this.msg(`✓ ${f.name} ist geladen (${U.winSize(f.bytes)}).`, 'ok');
                 $('loader-size').value = '';
+                this.closeProps();
                 this.onLoad(f);
                 this.renderList();
                 return;
             }
-            const unitHit = Object.keys(U.FACT).find((u) => u !== unit && close(U.toBytes(v, u), f.bytes));
-            if (unitHit) return bad(`Die Zahl stimmt – aber die Einheit nicht! Schau noch mal genau hinter die Zahl.`);
-            if (close(v, f.bytes)) return bad('Das ist die Größe in Byte. Wähle dann auch „Byte“ als Einheit – oder nimm die kürzere Zahl davor.');
-            bad('Das passt nicht zur Datei. Öffne die Eigenschaften (Rechtsklick) und lies die Größe genau ab.');
+            if (Object.keys(U.FACT).some((u) => u !== unit && close(U.toBytes(v, u), f.bytes))) return bad('Die Zahl stimmt, aber die Einheit nicht. Schau genau, was hinter der Zahl steht.');
+            if (close(entered, onDisk(f.bytes)) && !close(onDisk(f.bytes), f.bytes)) return bad('Das ist die „Größe auf Datenträger“. Nimm die Zeile darüber: „Größe“.');
+            if (close(v, f.bytes)) return bad('Das ist die Zahl in Bytes. Wähle dann auch „Byte“ als Einheit.');
+            bad('Das passt nicht. Öffne die Eigenschaften (Rechtsklick) und lies die Zeile „Größe“ ab.');
         }
     }
     MV.Explorer = Explorer;

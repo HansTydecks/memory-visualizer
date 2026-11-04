@@ -9,9 +9,9 @@
     const reduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const NOTES = {
-        spiral: 'Der Laser brennt die Datenspur als Spirale – von innen nach außen.',
-        'tracks-out': 'Der Kopf schreibt Spur für Spur – außen beginnt Spur 0, dann geht es nach innen.',
-        flash: 'Der Controller verteilt die Daten bunt gemischt auf die Speicherblöcke – so nutzt sich keine Zelle zu schnell ab.',
+        spiral: 'Der Laser brennt eine Spirale – von innen nach außen.',
+        'tracks-out': 'Der Kopf schreibt Ring für Ring – von außen nach innen.',
+        flash: 'Die Daten werden auf viele Speicherblöcke verteilt – bunt gemischt, damit sich keine Zelle abnutzt.',
     };
 
     function setupCanvas(cv) {
@@ -132,8 +132,8 @@
         c.fillRect(ox - 8, oy - 8, s * FLASH_COLS + 16, s * FLASH_ROWS + 16);
         c.strokeStyle = 'rgba(255,42,109,.7)'; c.lineWidth = 1.4;
         c.strokeRect(ox - 8, oy - 8, s * FLASH_COLS + 16, s * FLASH_ROWS + 16);
-        c.fillStyle = '#ff7aa2'; c.font = '600 11px "JetBrains Mono", monospace';
-        c.fillText(dev.id === 'usb' ? 'NAND-FLASH · Speicherblöcke' : 'UFS-FLASH · Speicherblöcke', ox - 6, oy - 14);
+        c.fillStyle = '#ff7aa2'; c.font = '500 13px Lexend, system-ui, sans-serif';
+        c.fillText(dev.id === 'usb' ? 'Flash-Chip: Speicherblöcke' : 'Flash-Speicher: Speicherblöcke', ox - 6, oy - 14);
         const filled = f * FLASH_N;
         for (let b = 0; b < FLASH_N; b++) {
             const col = b % FLASH_COLS, row = Math.floor(b / FLASH_COLS);
@@ -163,13 +163,13 @@
         const { device: dev, file, capacity } = opt;
         const N = Math.floor(capacity / file.bytes);
         const fFinal = Math.min(1, (N * file.bytes) / capacity);
-        const verbCap = dev.verb === 'brennt' ? 'BRENNE' : 'SCHREIBE';
+        const verbCap = dev.verb === 'brennt' ? 'wird gebrannt' : 'wird gespeichert';
         host.innerHTML =
             `<div class="fv">` +
             `<div class="fv-src"><div class="fv-stack t-${file.type}">${MV.fileIcon(file)}${MV.fileIcon(file)}${MV.fileIcon(file)}</div>` +
-            `<div class="fv-src-name">${file.name}</div><div class="fv-src-size">${U.winSize(file.bytes)} pro Datei</div></div>` +
+            `<div class="fv-src-name">${file.name}</div><div class="fv-src-size">je ${U.winSize(file.bytes)}</div></div>` +
             `<div class="fv-lane" aria-hidden="true"><div class="fv-beam"></div></div>` +
-            `<div class="fv-dev"><canvas class="fv-canvas" aria-label="${dev.name} wird beschrieben"></canvas><div class="fv-dev-name">${dev.name} · ${U.size(capacity)}</div></div>` +
+            `<div class="fv-dev"><canvas class="fv-canvas" role="img" aria-label="${dev.name} von oben: Der beschriebene Bereich wird pink."></canvas><div class="fv-dev-name">${dev.name} · ${U.size(capacity)}</div></div>` +
             `</div>` +
             `<div class="fv-stats">` +
             `<div class="fv-count"><span class="fv-n" id="fv-n">0</span><span class="fv-x">× ${file.name}</span></div>` +
@@ -214,7 +214,7 @@
             cancelAnimationFrame(raf);
             update(N, performance.now());
             window.removeEventListener('resize', onResize);
-            host.querySelector('#fv-status').textContent = N > 0 ? 'FERTIG ✓' : 'PASST NICHT ✗';
+            host.querySelector('#fv-status').textContent = N > 0 ? 'fertig ✓' : 'passt nicht ✗';
             host.querySelector('.fv').classList.add('done');
             opt.onDone && opt.onDone(N);
         };

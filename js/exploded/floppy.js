@@ -17,7 +17,7 @@
 
             /* 6 Gehäuse-Unterschale */
             sc.part({
-                id: 'bottom', name: 'Gehäuse-Unterschale', sub: 'mit Schreibschutz-Schieber',
+                id: 'bottom', short: 'Unterer Teil des Gehäuses. In der Ecke sitzt der Schreibschutz-Schieber.', name: 'Gehäuse-Unterschale', sub: 'mit Schreibschutz-Schieber',
                 info: 'Unterer Teil des harten Kunststoffgehäuses. In der Mitte ist eine runde Öffnung: Dort greift der Motor des Laufwerks an die Metallnabe. In den beiden Ecken sitzen kleine Löcher: Eines zeigt dem Laufwerk an, dass es eine HD-Diskette (1,44 MB) ist. Das andere kann mit einem Schiebeschalter verschlossen werden – ist es offen, ist die Diskette schreibgeschützt.',
                 anchor: [W, 20, 1.4], side: 'R', explode: [0, 0, 0],
             }, (s) => {
@@ -31,14 +31,14 @@
 
             /* 5 Reinigungsvlies unten */
             sc.part({
-                id: 'liner2', inner: true, name: 'Reinigungsvlies', sub: 'unten',
+                id: 'liner2', short: 'Weiches Vlies, das die Scheibe beim Drehen sauber wischt.', inner: true, name: 'Reinigungsvlies', sub: 'unten',
                 info: 'Weiches Vlies auf der Innenseite des Gehäuses. Bei jeder Umdrehung wischt es Staub von der Magnetscheibe, damit der Lesekopf sauber arbeiten kann.',
                 anchor: [CX - 43.5 * 0.7071, CY + 43.5 * 0.7071, 1.75], side: 'L', explode: [0, 0, 24],
             }, (s) => s.cyl(CX, CY, 1.5, 43.5, 0.25, M.fleece, { hole: 14 }));
 
             /* 4 Magnetscheibe mit Metallnabe */
             sc.part({
-                id: 'disk', inner: true, name: 'Magnetscheibe', sub: 'hier liegen die Daten', data: true,
+                id: 'disk', short: 'Eine dünne, biegsame Folie mit magnetischer Beschichtung.', howShort: 'Ein winziger Elektromagnet im Laufwerk magnetisiert Stellen in die eine oder andere Richtung – das ergibt 0 oder 1.', inner: true, name: 'Magnetscheibe', sub: 'hier liegen die Daten', data: true,
                 info: 'Eine dünne, biegsame Kunststofffolie (daher „Floppy“ = schlabbrig). Beide Seiten sind mit winzigen magnetischen Eisenoxid-Teilchen beschichtet. In der Mitte klebt eine Metallnabe, an der der Motor die Scheibe 300-mal pro Minute dreht.',
                 how: 'Der Schreib-/Lesekopf im Laufwerk ist ein winziger Elektromagnet. Er magnetisiert winzige Bereiche der Schicht in die eine oder andere Richtung. Beim Lesen spürt er, wo die Magnetrichtung wechselt – daraus werden Nullen und Einsen. Jede Seite hat 80 ringförmige Spuren, jede Spur 18 Abschnitte (Sektoren) mit je 512 Byte. 80 × 18 × 2 Seiten × 512 Byte = 1.474.560 Byte.',
                 anchor: [CX + 43 * 0.7071, CY - 43 * 0.7071, 1.95], side: 'R', explode: [0, 0, 54],
@@ -53,14 +53,14 @@
 
             /* 3 Reinigungsvlies oben */
             sc.part({
-                id: 'liner1', inner: true, name: 'Reinigungsvlies', sub: 'oben',
+                id: 'liner1', short: 'Weiches Vlies, das die Scheibe beim Drehen sauber wischt.', inner: true, name: 'Reinigungsvlies', sub: 'oben',
                 info: 'Zweites Vlies auf der Innenseite der Oberschale – so wird die Scheibe von beiden Seiten sauber gehalten.',
                 anchor: [CX - 43.5 * 0.7071, CY + 43.5 * 0.7071, 2.35], side: 'L', explode: [0, 0, 92],
             }, (s) => s.cyl(CX, CY, 2.1, 43.5, 0.25, M.fleece, { hole: 14 }));
 
             /* 2 Gehäuse-Oberschale */
             sc.part({
-                id: 'top', name: 'Gehäuse-Oberschale', sub: 'mit Lesekopf-Fenster',
+                id: 'top', short: 'Hartes Kunststoffgehäuse. Durch das Fenster kommt der Lesekopf an die Scheibe.', name: 'Gehäuse-Oberschale', sub: 'mit Lesekopf-Fenster',
                 info: 'Oberer Teil des Kunststoffgehäuses mit dem Etikett. Durch das schmale Fenster kommt der Schreib-/Lesekopf an die Magnetscheibe – auf der Unterseite ist ein zweites Fenster, denn beide Seiten der Scheibe werden benutzt.',
                 anchor: [W, 30, 3.3], side: 'R', explode: [0, 0, 118],
             }, (s) => {
@@ -68,7 +68,7 @@
                 g += s.flat([[25, 58], [65, 58], [65, 94], [25, 94]], 3.31, 'fill="rgba(0,0,0,.28)" stroke="none"');
                 g += s.flat([[8, 8], [82, 8], [82, 52], [8, 52]], 3.32, 'fill="#e6ecf7" fill-opacity=".9" stroke="#ffffff" stroke-width=".6"');
                 for (let i = 0; i < 4; i++) g += s.line3([12, 20 + i * 8, 3.33], [78, 20 + i * 8, 3.33], 'stroke="#8090b0" stroke-width=".7"');
-                g += s.flatText(12, 15, 3.34, 'HD 1.44 MB', 8, 'fill="#ff2a6d" font-family="Orbitron, monospace" font-weight="700"');
+                g += s.flatText(12, 15, 3.34, 'HD 1.44 MB', 8, 'fill="#ff2a6d" font-family="Lexend, system-ui, sans-serif" font-weight="700"');
                 g += s.flat(hole(5, 4).map(([x, y]) => [x, y]), 3.31, 'fill="#05060a"');
                 g += s.flat(hole(80.5, 4), 3.31, 'fill="#05060a"');
                 return g;
@@ -76,7 +76,7 @@
 
             /* 1 Metallschieber */
             sc.part({
-                id: 'shutter', name: 'Metallschieber', sub: 'schützt die Scheibe',
+                id: 'shutter', short: 'Schützt die Magnetscheibe vor Staub. Im Laufwerk wird er zur Seite geschoben.', name: 'Metallschieber', sub: 'schützt die Scheibe',
                 info: 'Der Schieber verschließt das Fenster und schützt die empfindliche Scheibe vor Staub und Fingern. Erst im Laufwerk wird er zur Seite geschoben; eine kleine Feder im Gehäuse schiebt ihn danach zurück.',
                 anchor: [26, 94.3, 2], side: 'L', explode: [0, 0, 142],
             }, (s) => {

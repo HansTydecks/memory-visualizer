@@ -21,29 +21,29 @@
             const OUT = rrect(0, 0, 101.6, 147, 3, 3);
 
             sc.part({
-                id: 'pcb', name: 'Platine', sub: 'Controller, Cache, SATA',
+                id: 'pcb', short: 'Elektronik: steuert Motor und Kopf, hier wird das Kabel angesteckt.', name: 'Platine', sub: 'Controller, Cache, SATA',
                 info: 'Die Elektronik sitzt auf der Unterseite. Der Controller steuert Motor und Kopfarm und prüft die Daten auf Fehler. Der Cache ist ein kleiner, schneller Zwischenspeicher. Über den SATA-Anschluss kommen Daten und Strom.',
                 anchor: [101.6 - 6, 120, -0.8], side: 'R', explode: [0, 0, -44],
             }, (s) => {
                 let g = s.prism(box(6, 18, 89.6, 124), -1.6, 1.6, M.pcb);
                 g += s.prism(box(40, 100, 16, 16), 0, 1.2, M.chip);
-                g += s.flatText(42, 108, 1.21, 'CTRL', 4, 'fill="#9aa4b8" font-family="Orbitron, monospace"');
+                g += s.flatText(42, 108, 1.21, 'CTRL', 4, 'fill="#9aa4b8" font-family="Lexend, system-ui, sans-serif"');
                 g += s.prism(box(62, 104, 14, 9), 0, 1.0, M.chip);
-                g += s.flatText(63, 109, 1.01, 'CACHE', 3, 'fill="#3fd8ff" font-family="Orbitron, monospace"');
+                g += s.flatText(63, 109, 1.01, 'CACHE', 3, 'fill="#3fd8ff" font-family="Lexend, system-ui, sans-serif"');
                 g += s.prism(box(20, 108, 10, 10), 0, 1.0, M.chip);
                 g += s.prism(box(14, 18, 50, 8), 0, 5, M.black);
-                g += s.flatText(22, 23.5, 5.01, 'SATA', 4.5, 'fill="#3fd8ff" font-family="Orbitron, monospace" font-weight="700"');
+                g += s.flatText(22, 23.5, 5.01, 'SATA', 4.5, 'fill="#3fd8ff" font-family="Lexend, system-ui, sans-serif" font-weight="700"');
                 return g;
             });
 
             sc.part({
-                id: 'base', name: 'Gehäuse', sub: 'Aluminium-Guss',
+                id: 'base', short: 'Stabiles Gehäuse aus Aluminium.', name: 'Gehäuse', sub: 'Aluminium-Guss',
                 info: 'Ein gegossener, sehr steifer Aluminium-Rahmen. Er darf sich kein bisschen verbiegen, denn der Lesekopf muss seine Spur auf Tausendstel Millimeter genau treffen.',
                 anchor: [101.6, 60, 10], side: 'R', explode: [0, 0, 0],
             }, (s) => s.prism(OUT, 0, 20, M.metal, { hole: rrect(3, 3, 95.6, 141, 4, 3), floorZ: 2, floorFill: '#262d3b' }));
 
             sc.part({
-                id: 'motor', inner: true, name: 'Spindelmotor', sub: '5.400 – 7.200 U/min',
+                id: 'motor', short: 'Dreht die Scheiben – bis zu 120-mal pro Sekunde.', inner: true, name: 'Spindelmotor', sub: '5.400 – 7.200 U/min',
                 info: 'Der Motor dreht alle Scheiben gemeinsam und ganz gleichmäßig – bei 7.200 Umdrehungen pro Minute sind das 120 Umdrehungen pro Sekunde! Die Außenkante der Scheibe rast dabei mit über 100 km/h im Kreis.',
                 anchor: [PC[0] - 12.4 * 0.7071, PC[1] + 12.4 * 0.7071, 5], side: 'L', explode: [0, 0, 28],
             }, (s) => {
@@ -53,7 +53,7 @@
             });
 
             sc.part({
-                id: 'platters', inner: true, name: 'Magnetscheiben', sub: 'hier liegen die Daten', data: true,
+                id: 'platters', short: 'Glänzende Scheiben mit einer magnetischen Schicht.', howShort: 'Der Kopf magnetisiert winzige Stellen nach oben oder unten – das ergibt 0 oder 1.', inner: true, name: 'Magnetscheiben', sub: 'hier liegen die Daten', data: true,
                 info: 'Hochglanzpolierte Scheiben aus Aluminium oder Glas, beschichtet mit einer hauchdünnen magnetischen Schicht. Es sind zwei Scheiben gezeichnet – große Festplatten haben bis zu 10 übereinander, und jede Seite wird benutzt.',
                 how: 'Der Schreibkopf magnetisiert winzige Bereiche der Schicht: Die kleinen Magnete zeigen entweder nach oben oder nach unten. Beim Lesen spürt der Kopf diese Magnetrichtungen – daraus werden Nullen und Einsen. Die Daten liegen in Hunderttausenden ringförmigen Spuren und bleiben auch ohne Strom viele Jahre erhalten.',
                 anchor: [PC[0] - 47.5 * 0.7071, PC[1] + 47.5 * 0.7071, 13.6], side: 'L', explode: [0, 0, 56],
@@ -69,7 +69,7 @@
             });
 
             sc.part({
-                id: 'arm', inner: true, name: 'Kopfarm', sub: 'mit Schwingspule',
+                id: 'arm', short: 'Schwenkt den Kopf blitzschnell über die Scheibe.', inner: true, name: 'Kopfarm', sub: 'mit Schwingspule',
                 info: 'Der Arm schwenkt wie der Tonarm eines Plattenspielers über die Scheiben – in wenigen Tausendstel Sekunden. Angetrieben wird er von einer Kupferspule (Schwingspule): Fließt Strom hindurch, drückt der Magnet sie zur Seite und der Arm dreht sich um seine Achse.',
                 anchor: [...at(len * 0.45, 3.5), 16], side: 'R', explode: [0, 0, 84],
             }, (s) => {
@@ -85,7 +85,7 @@
             });
 
             sc.part({
-                id: 'head', inner: true, name: 'Schreib-/Lesekopf', sub: 'schwebt über der Scheibe',
+                id: 'head', short: 'Winziger Elektromagnet, der knapp über der Scheibe schwebt.', inner: true, name: 'Schreib-/Lesekopf', sub: 'schwebt über der Scheibe',
                 info: 'Ein winziger Elektromagnet an der Spitze des Arms. Wenn die Scheiben sich drehen, schwebt er auf einem Luftpolster nur wenige millionstel Millimeter über der Oberfläche – ohne sie zu berühren. Für jede Scheibenseite gibt es einen eigenen Kopf.',
                 anchor: [HEAD[0], HEAD[1], 15.4], side: 'R', explode: [0, 0, 84],
             }, (s) => {
@@ -95,23 +95,23 @@
             });
 
             sc.part({
-                id: 'magnet', inner: true, name: 'Permanentmagnet', sub: 'Antrieb des Kopfarms',
+                id: 'magnet', short: 'Starker Magnet: Mit der Spule bewegt er den Kopfarm.', inner: true, name: 'Permanentmagnet', sub: 'Antrieb des Kopfarms',
                 info: 'Ein sehr starker Neodym-Magnet auf einer Stahlplatte (unter der Spule sitzt ein zweiter). Zusammen mit der Schwingspule bildet er den Motor, der den Kopfarm bewegt. Darum dürfen Festplatten nie in die Nähe starker Magnete!',
                 anchor: [100, 16, 18.5], side: 'R', explode: [0, 0, 110],
             }, (s) => {
                 let g = s.prism([[74, 3.5], [99, 3.5], [99, 25], [86, 27], [74, 18]], 16.5, 2.5, M.magnet);
-                g += s.flatText(80, 14, 19.01, 'NdFeB', 3.5, 'fill="#ff9a6b" font-family="Orbitron, monospace"');
+                g += s.flatText(80, 14, 19.01, 'NdFeB', 3.5, 'fill="#ff9a6b" font-family="Lexend, system-ui, sans-serif"');
                 return g;
             });
 
             sc.part({
-                id: 'lid', name: 'Deckel', sub: 'staubdicht verschlossen',
+                id: 'lid', short: 'Dichter Deckel – kein Staubkorn darf hinein.', name: 'Deckel', sub: 'staubdicht verschlossen',
                 info: 'Ein dicht verschlossener Metalldeckel. Ein Staubkorn wäre für den schwebenden Kopf wie ein Felsbrocken – darum werden Festplatten in Reinräumen zusammengebaut. Große Festplatten sind sogar mit Helium gefüllt.',
                 anchor: [101.6, 70, 20.6], side: 'R', explode: [0, 0, 138],
             }, (s) => {
                 let g = s.prism(OUT, 20, 1.2, M.steel, { topFill: s.linGrad([[0, '#c7d1df'], [0.5, '#8e9bad'], [1, '#b7c2d2']], 0, 0, 1, 1) });
                 g += s.flat(box(14, 40, 74, 52), 21.21, 'fill="#0e0c1a" stroke="#3fd8ff" stroke-opacity=".6"');
-                g += s.flatText(20, 56, 21.22, 'HDD 1 TB', 10, 'fill="#3fd8ff" font-family="Orbitron, monospace" font-weight="700"');
+                g += s.flatText(20, 56, 21.22, 'HDD 1 TB', 10, 'fill="#3fd8ff" font-family="Lexend, system-ui, sans-serif" font-weight="700"');
                 g += s.flatText(20, 70, 21.22, '7200 RPM · SATA 6 Gb/s', 5, 'fill="#9aa4b8" font-family="monospace"');
                 [[5, 5], [96.6, 5], [5, 142], [96.6, 142], [5, 72], [96.6, 72], PC, PIV].forEach(([x, y]) => { g += s.circ(x, y, 21.21, 2, 'fill="#4a5568" stroke="#e3f2ff" stroke-opacity=".5" stroke-width=".6"'); });
                 return g;
