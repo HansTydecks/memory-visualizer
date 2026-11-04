@@ -3,226 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speicher-Visualizer</title>
+    <title>Memory Scan</title>
+    <meta name="description" content="Speichermedien erforschen: Explosionsansichten, Schätzfragen und Größenvergleiche von Diskette bis Festplatte – für den Unterricht.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Memory</h1>
-        </header>
+    <div class="bg-grid" aria-hidden="true"></div>
 
-        <div class="main-content">
-            <!-- Dateien erfassen -->
-            <section class="card">
-                <h2>Dateien hinzufügen</h2>
-                <div class="file-input-group">
-                    <div class="file-type-selection">
-                        <button class="file-type-btn active" data-type="text">📄 Textdatei</button>
-                        <button class="file-type-btn" data-type="image">🖼️ Bild</button>
-                        <button class="file-type-btn" data-type="music">🎵 Musikdatei</button>
-                        <button class="file-type-btn" data-type="video">🎬 Film</button>
-                    </div>
-                    
-                    <div class="size-input-row">
-                        <input type="number" id="file-size" min="1" placeholder="Größe">
-                        
-                        <select id="file-unit">
-                            <option value="byte">Byte</option>
-                            <option value="kb">Kilobyte (KB)</option>
-                            <option value="mb">Megabyte (MB)</option>
-                            <option value="gb">Gigabyte (GB)</option>
-                        </select>
-                        
-                        <button id="add-file-btn">Datei hinzufügen</button>
-                    </div>
-                </div>
-                
-                <div id="file-list" class="file-list">
-                    <!-- Dateien werden hier dynamisch eingefügt -->
-                </div>
-            </section>
+    <header class="hud">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <h1 class="glitch" data-text="MEMORY//SCAN">MEMORY//SCAN</h1>
+            <span class="brand-sub">Speichermedien-Labor</span>
+        </div>
+        <div class="hud-progress" aria-label="Fortschritt">
+            <span class="hud-label">GERÄTE GESCANNT</span>
+            <div class="pips" id="pips"></div>
+            <span class="hud-count" id="hud-count">0/6</span>
+        </div>
+    </header>
 
-            <!-- Speichermedien erfassen -->
-            <section class="card">
-                <h2>Speichermedium hinzufügen</h2>
-                <div class="media-selection-section">
-                    <div class="media-type-selection">
-                        <button class="media-type-btn" data-type="cd">
-                            <img src="images/cd.png" alt="CD" class="media-btn-img">
-                            <span>CD</span>
-                        </button>
-                        <button class="media-type-btn" data-type="dvd">
-                            <img src="images/dvd.png" alt="DVD" class="media-btn-img">
-                            <span>DVD</span>
-                        </button>
-                        <button class="media-type-btn" data-type="usb">
-                            <img src="images/usb.png" alt="USB-Stick" class="media-btn-img">
-                            <span>USB-Stick</span>
-                        </button>
-                        <button class="media-type-btn" data-type="smartphone">
-                            <img src="images/smartphone.png" alt="Handy" class="media-btn-img">
-                            <span>Handy</span>
-                        </button>
-                        <button class="media-type-btn" data-type="hdd">
-                            <img src="images/hdd.png" alt="Festplatte" class="media-btn-img">
-                            <span>Festplatte</span>
-                        </button>
-                        <button class="media-type-btn" data-type="floppy">
-                            <img src="images/floppy.png" alt="Diskette" class="media-btn-img">
-                            <span>Diskette</span>
-                        </button>
-                    </div>
-                    
-                    <div class="media-input-section" id="media-input-section" style="display: none;">
-                        <div class="media-visual">
-                            <img src="" alt="Medium" class="media-image" id="selected-media-image">
-                            <div class="media-label" id="selected-media-label">Medium</div>
-                        </div>
-                        <div class="capacity-input">
-                            <input type="number" id="media-capacity" min="1" placeholder="Kapazität">
-                            <select id="media-capacity-unit">
-                                <option value="kb">Kilobyte (KB)</option>
-                                <option value="mb">Megabyte (MB)</option>
-                                <option value="gb">Gigabyte (GB)</option>
-                                <option value="tb">Terabyte (TB)</option>
-                            </select>
-                        </div>
-                        <button id="add-media-btn">Medium hinzufügen</button>
-                    </div>
-                </div>
-                
-                <div id="media-list" class="media-list">
-                    <!-- Speichermedien werden hier dynamisch eingefügt -->
-                </div>
-            </section>
-
-            <!-- Visualisierung -->
-            <section class="card visualization-card">
-                <h2>Speicher-Visualisierung</h2>
-                <div id="visualization-container" class="visualization-container">
-                    <div id="no-data-message" class="no-data">
-                        Füge Dateien und Speichermedien hinzu, um die Visualisierung zu sehen.
-                    </div>
-                    <div id="visualization-content" class="visualization-content" style="display: none;">
-                        <!-- Balkendiagramme werden hier dynamisch eingefügt -->
-                    </div>
-                </div>
-                
-                <div id="simulation-controls" class="simulation-controls" style="display: none;">
-                    <h3>Simulation starten</h3>
-                    <p>Wähle ein Speichermedium und fülle es schrittweise:</p>
-                    <div class="simulation-buttons">
-                        <!-- Buttons werden dynamisch generiert -->
-                    </div>
-                </div>
-            </section>
+    <div class="sys" role="status" aria-live="polite">
+        <span class="sys-tag">SYS//</span>
+        <span class="sys-text" id="sys-text"></span><span class="sys-caret" aria-hidden="true"></span>
     </div>
 
-    <!-- Mission System -->
-    <section class="mission-section">
-        <div class="mission-container">
-            <div class="mission-header">
-                <div class="byte-mascot" id="mission-byte-mascot">
-                    <img src="Byte_mascot/Byte_normal.png" alt="Byte Maskottchen">
-                </div>
-                <h2>Mission</h2>
+    <main class="layout">
+        <!-- Datei-Explorer (Simulation) -->
+        <section class="panel explorer" id="explorer" aria-labelledby="explorer-title">
+            <div class="panel-head">
+                <h2 id="explorer-title"><span class="ph-num">01</span> Datei-Explorer</h2>
+                <span class="ph-tag">SIMULATION</span>
             </div>
-            <div class="mission-content">
-                <div class="mission-text" id="mission-content">
-                    Lade die Anwendung...
+            <div class="win">
+                <div class="win-bar">
+                    <span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="win-title">Explorer</span>
                 </div>
-                <div class="mission-progress">
-                    <span id="mission-counter">1 / 8</span>
+                <div class="win-path" id="win-path">C:\Schule\Tauschordner\ausgeteilt</div>
+                <div class="win-body">
+                    <nav class="win-side" id="win-side" aria-label="Ordner"></nav>
+                    <div class="win-list" id="win-list" role="listbox" aria-label="Dateien"></div>
                 </div>
+                <div class="win-status" id="win-status">Tipp: Rechtsklick auf eine Datei → Eigenschaften</div>
+                <div class="ctx" id="ctx" role="menu" hidden>
+                    <button role="menuitem" data-act="open">Öffnen</button>
+                    <button role="menuitem" data-act="props">Eigenschaften</button>
+                </div>
+                <div class="props" id="props" hidden role="dialog" aria-labelledby="props-title"></div>
             </div>
-            <div class="mission-navigation">
-                <div class="mission-buttons" id="mission-buttons">
-                    <!-- Mission buttons will be generated dynamically -->
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <footer>
-        <div class="impressum">
-            <p>
-                Entwickelt für Lernende und Lehrende |
-                <a href="https://tinfo.space/teachers/Digitale_Tools/" target="_blank" rel="noopener">More apps and tools</a> |
-                <a href="http://contact.tinfo.space/" id="contact-link">Kontakt</a> |
-                <a href="https://linktr.ee/tinfo.space" target="_blank" rel="noopener">Links</a> |
-                <a href="https://github.com/HansTydecks" target="_blank" rel="noopener">GitHub</a> |
-                © 2025 Hans Tydecks
-            </p>
-        </div>
+            <form class="loader" id="loader" autocomplete="off">
+                <div class="loader-head">
+                    <span>DATEI LADEN</span>
+                    <span class="loader-file" id="loader-file">keine Datei gewählt</span>
+                </div>
+                <label class="sr-only" for="loader-size">Abgelesene Größe</label>
+                <div class="loader-row">
+                    <input id="loader-size" type="text" inputmode="decimal" placeholder="z. B. 4,11" disabled>
+                    <label class="sr-only" for="loader-unit">Einheit</label>
+                    <select id="loader-unit" disabled>
+                        <option value="byte">Byte</option>
+                        <option value="kb">KB</option>
+                        <option value="mb" selected>MB</option>
+                        <option value="gb">GB</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary" id="loader-btn" disabled>Laden</button>
+                </div>
+                <div class="loader-msg" id="loader-msg" aria-live="polite"></div>
+                <div class="ablage" id="ablage" aria-label="Geladene Dateien"></div>
+            </form>
+        </section>
+
+        <!-- Bühne / Ablauf -->
+        <section class="panel stage" id="stage" aria-labelledby="stage-title">
+            <div class="panel-head">
+                <h2 id="stage-title"><span class="ph-num">02</span> <span id="stage-name">Labor</span></h2>
+                <ol class="stepper" id="stepper" aria-label="Ablauf"></ol>
+            </div>
+            <div class="stage-body" id="stage-body"></div>
+        </section>
+
+        <!-- Geräte-Hangar -->
+        <section class="panel hangar" id="hangar" aria-labelledby="hangar-title">
+            <div class="panel-head">
+                <h2 id="hangar-title"><span class="ph-num">03</span> Geräte-Hangar</h2>
+                <span class="ph-tag">FREIE WAHL</span>
+            </div>
+            <p class="hangar-hint">Nimm ein echtes Gerät vom Tisch und wähle es hier aus.</p>
+            <div class="devices" id="devices"></div>
+        </section>
+    </main>
+
+    <footer class="foot">
+        <p>
+            Entwickelt für Lernende und Lehrende |
+            <a href="https://tinfo.space/teachers/Digitale_Tools/" target="_blank" rel="noopener">More apps and tools</a> |
+            <a href="http://contact.tinfo.space/" id="contact-link">Kontakt</a> |
+            <a href="https://linktr.ee/tinfo.space" target="_blank" rel="noopener">Links</a> |
+            <a href="https://github.com/HansTydecks" target="_blank" rel="noopener">GitHub</a> |
+            © 2025 Hans Tydecks
+        </p>
+        <button class="btn btn-ghost btn-small" id="reset-btn" type="button">Alles zurücksetzen</button>
     </footer>
 
-    <!-- Mission Success Modal -->
-    <div class="modal-overlay" id="mission-modal">
-        <div class="modal-content mission-modal">
-            <div class="mission-success">
-                <div class="modal-header-with-byte">
-                    <div class="byte-mascot celebrating" id="mission-success-byte">
-                        <img src="Byte_mascot/Byte_Happy.png" alt="Byte freut sich!">
-                    </div>
-                    <h3>🎉 Mission erfüllt!</h3>
-                </div>
-                <div class="mission-result" id="mission-result">
-                    <!-- Wird dynamisch gefüllt -->
-                </div>
-                <div class="mission-timer" id="mission-timer" style="display: none;">
-                    <div class="timer-bar">
-                        <div class="timer-progress" id="timer-progress"></div>
-                    </div>
-                    <div class="timer-text" id="timer-text">Bitte warten...</div>
-                </div>
-                <button class="continue-btn" id="continue-mission" style="display: none;">Weiter</button>
-            </div>
+    <div class="modal" id="modal" hidden>
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <h3 id="modal-title"></h3>
+            <div class="modal-text" id="modal-text"></div>
+            <div class="modal-btns" id="modal-btns"></div>
         </div>
     </div>
 
-    <!-- Help Request Modal -->
-    <div class="modal-overlay" id="help-request-modal">
-        <div class="modal-content help-modal">
-            <div class="modal-header">
-                <div class="modal-header-with-byte">
-                    <div class="byte-mascot" id="help-request-byte">
-                        <img src="Byte_mascot/Byte_normal.png" alt="Byte hilft">
-                    </div>
-                    <h3>🆘 Hilfe anfordern</h3>
-                </div>
-            </div>
-            <div class="help-content">
-                <p>Brauchst du Hilfe bei dieser Aufgabe?</p>
-                <div id="help-progress-container" style="display: none;">
-                    <!-- Progress bar wird hier eingefügt -->
-                </div>
-                <div class="help-buttons">
-                    <button class="help-btn-yes" id="help-yes" style="display: block;">Ja, ich brauche Hilfe!</button>
-                    <button class="help-btn-no" id="help-no">Nein, ich versuche es noch mal selbst</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Help Explanation Modal -->
-    <div class="modal-overlay" id="help-explanation-modal">
-        <div class="modal-content help-modal">
-            <div class="modal-header">
-                <div class="modal-header-with-byte">
-                    <div class="byte-mascot" id="help-explanation-byte">
-                        <img src="Byte_mascot/Byte_normal.png" alt="Byte erklärt">
-                    </div>
-                    <h3>🎯 So geht's!</h3>
-                </div>
-                <button class="close-btn" id="close-help-explanation">&times;</button>
-            </div>
-            <div class="help-explanation" id="help-explanation-content">
-                <!-- Wird dynamisch gefüllt -->
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+    <script src="js/units.js"></script>
+    <script src="js/files-data.js"></script>
+    <script src="js/devices-data.js"></script>
+    <script src="js/exploded/common.js"></script>
+    <script src="js/exploded/floppy.js"></script>
+    <script src="js/exploded/optical.js"></script>
+    <script src="js/exploded/usb.js"></script>
+    <script src="js/exploded/phone.js"></script>
+    <script src="js/exploded/hdd.js"></script>
+    <script src="js/explorer.js"></script>
+    <script src="js/fill-viz.js"></script>
+    <script src="js/compare-viz.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
