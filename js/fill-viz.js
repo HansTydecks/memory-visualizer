@@ -133,7 +133,7 @@
         c.strokeStyle = 'rgba(255,42,109,.7)'; c.lineWidth = 1.4;
         c.strokeRect(ox - 8, oy - 8, s * FLASH_COLS + 16, s * FLASH_ROWS + 16);
         c.fillStyle = '#ff7aa2'; c.font = '500 13px Lexend, system-ui, sans-serif';
-        c.fillText(dev.id === 'usb' ? 'Flash-Chip: Speicherblöcke' : 'Flash-Speicher: Speicherblöcke', ox - 6, oy - 14);
+        c.fillText(dev.id === 'usb' ? 'Flash-Chip: Speicherblöcke' : dev.id === 'ssd' ? 'Flash-Chips: Speicherblöcke' : 'Flash-Speicher: Speicherblöcke', ox - 6, oy - 14);
         const filled = f * FLASH_N;
         for (let b = 0; b < FLASH_N; b++) {
             const col = b % FLASH_COLS, row = Math.floor(b / FLASH_COLS);

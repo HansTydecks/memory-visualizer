@@ -40,6 +40,12 @@
             hint: 'Auf dem Etikett oben auf der Festplatte steht die Kapazität, z. B. „1 TB“ oder „500 GB“.',
             fill: 'tracks-out', verb: 'schreibt', file: 'film', tech: 'magnetisch',
         },
+        {
+            id: 'ssd', name: 'SSD', plural: 'SSDs', unit: 'gb', article: 'die', gen: 'der SSD', year: 2007,
+            range: [32 * GB, 16 * TB], typical: '256 GB – 2 TB', thick: 7,
+            hint: 'Auf dem Etikett steht die Kapazität, z. B. „500 GB“ oder „1 TB“. Im Computer: Dieser PC → Laufwerk → Eigenschaften.',
+            fill: 'flash', verb: 'speichert', file: 'film', tech: 'elektronisch',
+        },
     ];
     MV.deviceById = (id) => MV.DEVICES.find((d) => d.id === id);
 
