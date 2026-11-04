@@ -254,77 +254,188 @@
             });
         },
 
-        /* --- 2 Explosionsansicht --- */
+        /* --- 2 Explosionsansicht: Bauteil-Tour mit Zoom --- */
         renderExplode(body, d) {
             const xv = MV.renderExploded(MV.exploded[d.id]);
-            const dataPart = xv.parts.find((p) => p.data);
+            const parts = xv.parts;
+            const dataPart = parts.find((p) => p.data);
             const unlocked = this.xvSeen.has(d.id) || (this.state.devices[d.id].reached || 0) > 2;
             body.innerHTML =
                 `<div class="xv-wrap">` +
                 `<h3 class="sr-only">Explosionsansicht: ${d.name}</h3>` +
-                `<div class="xv-stage${unlocked ? '' : ' hint-data'}" id="xv-stage">${xv.svg}</div>` +
+                `<div class="xv-stage${unlocked ? '' : ' hint-data'}" id="xv-stage">${xv.svg}` +
+                `<div class="xv-card" id="xv-card" role="region" aria-label="Bauteil-Info" hidden></div></div>` +
                 `<div class="xv-bar"><button type="button" class="btn btn-ghost" id="xv-toggle">Zerlegen</button>` +
                 (MV.exploded[d.id].note ? `<span class="xv-scale">${MV.exploded[d.id].note}</span>` : '') + `</div>` +
-                `<ol class="xv-list" id="xv-list">${xv.parts.map((p) => `<li><button type="button" data-part="${p.id}" class="${p.data ? 'is-data' : ''}"><span class="n">${p.num}</span>${p.name}</button></li>`).join('')}</ol>` +
-                `<div class="xv-info" id="xv-info" aria-live="polite"><p class="muted">Klicke auf ein Bauteil. Das <b class="pink">pinke</b> Bauteil speichert deine Daten.</p></div>` +
+                `<ol class="xv-list" id="xv-list" aria-label="Bauteile">${parts.map((p) => `<li><button type="button" data-part="${p.id}" class="${p.data ? 'is-data' : ''}"><span class="n">${p.num}</span>${p.name}</button></li>`).join('')}</ol>` +
                 `<div class="actions"><button type="button" class="btn btn-primary" id="to-est" ${unlocked ? '' : 'disabled'}>Weiter</button>` +
-                `<span class="lock-hint" id="lock-hint">${unlocked ? '' : `Klicke zuerst auf Bauteil ${dataPart.num}.`}</span></div>` +
+                `<span class="lock-hint" id="lock-hint">${unlocked ? '' : `Schau dir zuerst Bauteil ${dataPart.num} an.`}</span></div>` +
                 `</div>`;
             const stage = $('xv-stage');
+            const card = $('xv-card');
             const toggle = $('xv-toggle');
+            const svgEl = stage.querySelector('svg');
+            const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            /* ---- Kamera (viewBox) ---- */
+            let base = xv.view.slice();   // Übersicht, an das Seitenverhältnis der Bühne angepasst
+            let view = base.slice();
+            let wide = true;
+            let raf = 0;
+            let cur = -1;                 // Index des gewählten Bauteils
+            const applyView = (v) => {
+                view = v;
+                svgEl.setAttribute('viewBox', v.map((n) => Math.round(n * 10) / 10).join(' '));
+                svgEl.style.setProperty('--inv', ((v[2] / Math.max(1, svgEl.clientWidth)) * (svgEl.clientWidth < 500 ? 0.8 : 1)).toFixed(4));
+            };
+            const fit = () => {
+                const w = stage.clientWidth;
+                wide = w >= 560;
+                stage.classList.toggle('wide', wide);
+                const [, , VW, VH] = xv.view;
+                const h = Math.max(300, Math.min(window.innerHeight * 0.7, (w * VH) / VW));
+                svgEl.style.height = Math.round(h) + 'px';
+                const A = w / h;
+                // Übersicht: ganze Zeichnung, auf das Seitenverhältnis erweitert
+                base = VW / VH > A ? [0, VH / 2 - VW / A / 2, VW, VW / A] : [VW / 2 - (VH * A) / 2, 0, VH * A, VH];
+                cancelAnimationFrame(raf);
+                applyView(cur >= 0 ? target(parts[cur]) : base);
+            };
+            const target = (p) => {
+                const A = base[2] / base[3];
+                // Bauteil + seine Nummer müssen sichtbar sein
+                const r = 26 * (base[2] / Math.max(1, svgEl.clientWidth));
+                const x0 = Math.min(p.box[0], p.anchor[0] - r), y0 = Math.min(p.box[1], p.anchor[1] - r);
+                const x1 = Math.max(p.box[0] + p.box[2], p.anchor[0] + r), y1 = Math.max(p.box[1] + p.box[3], p.anchor[1] + r);
+                const bx = x0, by = y0, bw = x1 - x0, bh = y1 - y0;
+                const cx = bx + bw / 2, cy = by + bh / 2;
+                // maßvoller Zoom: das Gerät bleibt im Blick
+                // mit Karte rechts: Bauteil muss in die linken 56 % passen (große Bauteile: etwas herauszoomen)
+                const need = wide ? Math.max(bw / 0.52, (bh * A) / 0.8) : Math.max(bw / 0.75, (bh * A) / 0.8);
+                const W = Math.min(base[2] * (wide ? 1.4 : 1), Math.max(need, base[2] * 0.55));
+                const H = W / A;
+                let x = cx - W * (wide ? 0.3 : 0.5);
+                let y = cy - H / 2;
+                const clamp = (v, a, b) => Math.max(Math.min(a, b), Math.min(v, Math.max(a, b)));
+                if (!wide || W <= base[2]) x = clamp(x, base[0] - (wide ? W * 0.2 : 0), base[0] + base[2] - (wide ? W * 0.6 : W));
+                y = clamp(y, base[1], base[1] + base[3] - H);
+                return [x, y, W, H];
+            };
+            const flyTo = (to) => {
+                cancelAnimationFrame(raf);
+                const from = view.slice();
+                if (reduce) { applyView(to); return; }
+                const c0 = [from[0] + from[2] / 2, from[1] + from[3] / 2], c1 = [to[0] + to[2] / 2, to[1] + to[3] / 2];
+                const dist = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]);
+                const bump = Math.min(0.4, dist / (from[2] + to[2]));
+                const A = to[2] / to[3];
+                const T0 = performance.now(), DUR = 800;
+                const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+                const step = (now) => {
+                    const t = Math.min(1, (now - T0) / DUR), e = ease(t);
+                    const W = (from[2] + (to[2] - from[2]) * e) * (1 + bump * Math.sin(Math.PI * t));
+                    const cx = c0[0] + (c1[0] - c0[0]) * e, cy = c0[1] + (c1[1] - c0[1]) * e;
+                    applyView([cx - W / 2, cy - W / A / 2, W, W / A]);
+                    if (t < 1) raf = requestAnimationFrame(step); else applyView(to);
+                };
+                raf = requestAnimationFrame(step);
+            };
+
+            /* ---- Zerlegen / Zusammenbauen ---- */
             const setExploded = (on) => {
                 stage.classList.toggle('exploded', on);
                 toggle.textContent = on ? 'Zusammenbauen' : 'Zerlegen';
+                if (!on) overview();
             };
             toggle.addEventListener('click', () => setExploded(!stage.classList.contains('exploded')));
             const t = setTimeout(() => setExploded(true), 600);
-            const svgEl = stage.querySelector('svg');
-            const fit = () => {
-                const narrow = stage.clientWidth < 820; // darunter wären die Beschriftungen kleiner als 14 px
-                svgEl.setAttribute('viewBox', narrow ? xv.vbNarrow : xv.vbWide);
-                stage.classList.toggle('narrow', narrow);
-                body.querySelector('.xv-wrap').classList.toggle('narrow', narrow);
-            };
+            let t2 = 0;
             fit();
             window.addEventListener('resize', fit);
-            this.anim = { stop: () => { clearTimeout(t); window.removeEventListener('resize', fit); } };
+            this.anim = { stop: () => { clearTimeout(t); clearTimeout(t2); cancelAnimationFrame(raf); window.removeEventListener('resize', fit); } };
 
-            const select = (id) => {
-                const p = xv.parts.find((x) => x.id === id);
-                if (!p) return;
-                if (!stage.classList.contains('exploded')) setExploded(true);
+            /* ---- Auswahl ---- */
+            const mark = (id) => {
                 stage.querySelectorAll('.sel').forEach((n) => n.classList.remove('sel'));
-                stage.querySelectorAll(`[data-part="${id}"]`).forEach((n) => n.classList.add('sel'));
+                if (id) stage.querySelectorAll(`[data-part="${id}"]`).forEach((n) => n.classList.add('sel'));
                 $('xv-list').querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.part === id));
+            };
+            const overview = () => {
+                cur = -1;
+                mark(null);
+                stage.classList.remove('focus');
+                card.hidden = true;
+                flyTo(base);
+            };
+            const select = (i, focusMarker) => {
+                if (i < 0 || i >= parts.length) return;
+                const p = parts[i];
+                const first = !stage.classList.contains('exploded');
+                if (first) setExploded(true);
+                cur = i;
+                mark(p.id);
+                stage.classList.add('focus');
                 const more = [p.info, p.how].filter(Boolean).map((x) => `<p>${x}</p>`).join('');
-                $('xv-info').innerHTML =
-                    `<h4><span class="n${p.data ? ' is-data' : ''}">${p.num}</span>${p.name}</h4>` +
+                const last = i === parts.length - 1;
+                card.innerHTML =
+                    `<div class="xv-card-head"><h4><span class="n${p.data ? ' is-data' : ''}">${p.num}</span>${p.name}</h4>` +
+                    `<button type="button" class="xv-close" data-act="close" aria-label="Ganzes Gerät zeigen" title="Ganzes Gerät zeigen">×</button></div>` +
                     `<p class="short">${p.short || p.info}</p>` +
                     (p.data && p.howShort ? `<div class="xv-how"><b>So speichert es Daten:</b> ${p.howShort}</div>` : '') +
-                    (more ? `<details class="more"><summary>Mehr erfahren</summary>${more}</details>` : '');
+                    (more ? `<details class="more"><summary>Mehr erfahren</summary>${more}</details>` : '') +
+                    `<div class="xv-nav"><button type="button" class="btn btn-ghost btn-sm" data-act="prev" ${i === 0 ? 'disabled' : ''} aria-label="Vorheriges Bauteil">‹</button>` +
+                    `<span class="xv-count">${p.num} von ${parts.length}</span>` +
+                    `<button type="button" class="btn btn-ghost btn-sm" data-act="${last ? 'close' : 'next'}">${last ? 'Ganzes Gerät' : 'Nächstes ›'}</button></div>`;
+                card.hidden = false;
+                card.scrollTop = 0;
+                // erst nach dem Zerlegen hinfliegen
+                clearTimeout(t2);
+                if (first && !reduce) t2 = setTimeout(() => flyTo(target(p)), 700); else flyTo(target(p));
+                if (focusMarker) { const m = stage.querySelector(`.xv-marker[data-part="${p.id}"]`); if (m) m.focus({ preventScroll: true }); }
                 if (p.data) {
                     this.xvSeen.add(d.id);
                     stage.classList.remove('hint-data');
                     $('to-est').disabled = false;
                     $('lock-hint').textContent = '';
-                    this.say('Genau, hier liegen die Daten! Klicke auf „Weiter“.');
+                    this.say('Genau, hier liegen die Daten! Schau dir ruhig noch die anderen Bauteile an – dann „Weiter“.');
                 }
-                if (window.innerWidth < 900) $('xv-info').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (!wide) card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
             };
+            const idx = (id) => parts.findIndex((p) => p.id === id);
+
             stage.addEventListener('click', (e) => {
+                const a = e.target.closest('[data-act]');
+                if (a) {
+                    if (a.dataset.act === 'close') overview();
+                    else select(cur + (a.dataset.act === 'next' ? 1 : -1));
+                    if (!card.hidden) { const b = card.querySelector(`[data-act="${a.dataset.act}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); }
+                    return;
+                }
+                if (card.contains(e.target)) return;
                 const n = e.target.closest('[data-part]');
-                if (n && n.dataset.part) select(n.dataset.part);
+                if (n && n.dataset.part && stage.classList.contains('exploded')) select(idx(n.dataset.part));
             });
             stage.addEventListener('keydown', (e) => {
-                const n = e.target.closest('[data-part]');
-                if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(n.dataset.part); }
+                const n = e.target.closest('.xv-marker');
+                if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(idx(n.dataset.part)); return; }
+                if (e.target.closest('summary, input')) return;
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    select(cur < 0 ? 0 : cur + (e.key === 'ArrowRight' ? 1 : -1), !!n);
+                } else if (e.key === 'Escape' && cur >= 0) {
+                    e.preventDefault();
+                    const back = stage.querySelector(`.xv-marker[data-part="${parts[cur].id}"]`);
+                    overview();
+                    if (back) back.focus({ preventScroll: true });
+                }
             });
             $('xv-list').addEventListener('click', (e) => {
                 const b = e.target.closest('[data-part]');
-                if (b) select(b.dataset.part);
+                if (b) select(idx(b.dataset.part));
             });
             $('to-est').addEventListener('click', () => this.go(d.id, 3));
-            this.say(unlocked ? 'Schau dir die Bauteile an und klicke dann auf „Weiter“.' : `So sieht ${ART[d.article][0]} ${d.name} innen aus. Klicke auf das pink leuchtende Bauteil – dort liegen die Daten.`);
+            this.say(unlocked ? 'Klicke auf die Nummern und schau dir die Bauteile an. Dann „Weiter“.' :
+                `So sieht ${ART[d.article][0]} ${d.name} innen aus. Klicke auf die Nummern – fang bei 1 an. Das pinke Bauteil speichert deine Daten.`);
         },
 
         /* --- 3 Schätzfrage --- */

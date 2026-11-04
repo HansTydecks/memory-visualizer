@@ -280,11 +280,11 @@
     MV.geo = { rrect, circlePts };
 
     /* ---------- Zusammenbau zu einem SVG ---------- */
-    const VB_W = 1000, COL_L = 222, COL_R = VB_W - 222, MID_L = 252, MID_R = VB_W - 252;
+    const VB_W = 1000, PAD = 30;
 
     /**
      * device = { build(): Scene, title }
-     * opt.icon = true -> kleines Icon (zusammengebaut, ohne Beschriftung)
+     * opt.icon = true -> kleines Icon (zusammengebaut, ohne Beschriftung, ohne innere Bauteile)
      */
     function render(device, opt = {}) {
         const sc = device.build();
@@ -301,63 +301,29 @@
             const pad = 6;
             const vb = `${f(asm[0] - pad)} ${f(asm[1] - pad)} ${f(asm[2] - asm[0] + 2 * pad)} ${f(asm[3] - asm[1] + 2 * pad)}`;
             return `<svg class="xv-icon" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs>${sc.defs.join('')}</defs>` +
-                parts.map((p) => `<g>${p.svg}</g>`).join('') + `</svg>`;
+                parts.filter((p) => !p.inner).map((p) => `<g>${p.svg}</g>`).join('') + `</svg>`;
         }
 
-        // Skalierung, damit die zerlegte Ansicht in die Mittelspalte passt
-        const availW = MID_R - MID_L;
-        const k = Math.min(1, availW / (exp[2] - exp[0]));
-        const top = 34;
-        const tx = (MID_L + MID_R) / 2 - ((exp[0] + exp[2]) / 2) * k;
-        const ty = top - exp[1] * k;
-        const H = Math.max(440, Math.ceil((exp[3] - exp[1]) * k + top + 46));
+        // Zeichnung auf eine feste Breite skalieren
+        const k = (VB_W - 2 * PAD) / (exp[2] - exp[0]);
+        const tx = PAD - exp[0] * k;
+        const ty = PAD - exp[1] * k;
+        const H = Math.ceil((exp[3] - exp[1]) * k + 2 * PAD);
+        const T = (p) => [tx + p[0] * k, ty + p[1] * k];
         // Versatz, damit das zusammengebaute Gerät mittig steht
         const asmShift = [((exp[0] + exp[2]) - (asm[0] + asm[2])) / 2, ((exp[1] + exp[3]) - (asm[1] + asm[3])) / 2];
 
-                const labelled = parts.filter((p) => p.anchorPt && p.name);
-        // Nummer 1 = oberstes Bauteil (zuletzt gezeichnet), sofern nicht anders angegeben
-        const byY = labelled.slice().reverse();
-        byY.forEach((p, i) => (p.num = i + 1));
+        const labelled = parts.filter((p) => p.anchorPt && p.name);
+        // Nummer 1 = oberstes Bauteil (zuletzt gezeichnet)
+        const order = labelled.slice().reverse();
+        order.forEach((p, i) => (p.num = i + 1));
 
-        // Beschriftungen verteilen
-        const T = (p) => [tx + p[0] * k, ty + p[1] * k];
-        const sides = { L: [], R: [] };
-        byY.forEach((p) => {
+        const markers = order.map((p) => {
             const a = T(p.anchorPt);
-            const side = p.side || (a[0] < VB_W / 2 ? 'L' : 'R');
-            sides[side].push({ p, a, y: a[1] });
-        });
-        const GAP = 40, YMIN = 26, YMAX = H - 22;
-        Object.values(sides).forEach((list) => {
-            list.sort((u, v) => u.y - v.y);
-            for (let i = 0; i < list.length; i++) {
-                list[i].y = Math.max(list[i].y, YMIN, i ? list[i - 1].y + GAP : -Infinity);
-            }
-            for (let i = list.length - 1; i >= 0; i--) {
-                list[i].y = Math.min(list[i].y, i < list.length - 1 ? list[i + 1].y - GAP : YMAX);
-            }
-        });
-
-        let labels = '';
-        let markers = '';
-        Object.entries(sides).forEach(([side, list]) => {
-            list.forEach(({ p, a, y }) => {
-                const colX = side === 'L' ? COL_L : COL_R;
-                const elbow = side === 'L' ? COL_L + 16 : COL_R - 16;
-                const anchorTxt = side === 'L' ? 'end' : 'start';
-                const tX = side === 'L' ? colX - 30 : colX + 30;
-                const bX = side === 'L' ? colX - 14 : colX + 14;
-                const cls = p.data ? ' is-data' : '';
-                labels += `<g class="xv-label${cls}" data-part="${p.id}" tabindex="0" role="button" aria-label="${p.num}: ${p.name}">` +
-                    `<path class="xv-leader" d="M${f(a[0])} ${f(a[1])} L${f(elbow)} ${f(y)} L${f(colX)} ${f(y)}"/>` +
-                    `<circle class="xv-dot" cx="${f(a[0])}" cy="${f(a[1])}" r="3.6"/>` +
-                    `<circle class="xv-badge" cx="${f(bX)}" cy="${f(y)}" r="12"/>` +
-                    `<text class="xv-badge-t" x="${f(bX)}" y="${f(y + 4.5)}" text-anchor="middle">${p.num}</text>` +
-                    `<text class="xv-name" x="${f(tX)}" y="${f(y + 6)}" text-anchor="${anchorTxt}">${p.name}</text>` +
-                    `</g>`;
-                markers += `<g class="xv-marker${cls}" data-part="${p.id}"><circle cx="${f(a[0])}" cy="${f(a[1])}" r="17"/><text x="${f(a[0])}" y="${f(a[1] + 7)}" text-anchor="middle">${p.num}</text></g>`;
-            });
-        });
+            const cls = p.data ? ' is-data' : '';
+            return `<g class="xv-marker${cls}" data-part="${p.id}" transform="translate(${f(a[0])} ${f(a[1])})" tabindex="0" role="button" aria-label="Bauteil ${p.num}: ${p.name}">` +
+                `<g class="xv-m"><circle class="xv-hit" r="24"/><circle class="xv-ring" r="17"/><text y="7" text-anchor="middle">${p.num}</text></g></g>`;
+        }).join('');
 
         const partSvg = parts.map((p, i) => {
             const o = p.offset || [0, 0];
@@ -366,22 +332,25 @@
         }).join('');
         const extraSvg = sc.extras.map((e) => e.svg).join('');
 
-        const svg = `<svg class="xv" viewBox="0 0 ${VB_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Explosionsansicht: ${device.title}">` +
+        const svg = `<svg class="xv" viewBox="0 0 ${VB_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Explosionsansicht: ${device.title}">` +
             `<defs>${sc.defs.join('')}</defs>` +
             `<g transform="translate(${f(tx)} ${f(ty)}) scale(${f3(k)})">` +
             `<g class="xv-rig" style="--ax:${f(asmShift[0])}px;--ay:${f(asmShift[1])}px">${partSvg}<g class="xv-extra">${extraSvg}</g></g>` +
             `</g>` +
-            `<g class="xv-labels">${labels}</g>` +
             `<g class="xv-markers">${markers}</g>` +
             `</svg>`;
 
-        // schmale Ansicht (Handy): nur der Zeichnungsbereich, Nummern statt Beschriftungen
-        const nx0 = Math.max(0, tx + exp[0] * k - 24), nx1 = Math.min(VB_W, tx + exp[2] * k + 24);
         return {
             svg,
-            vbWide: `0 0 ${VB_W} ${H}`,
-            vbNarrow: `${f(nx0)} 0 ${f(nx1 - nx0)} ${H}`,
-            parts: byY.map((p) => ({ id: p.id, num: p.num, name: p.name, sub: p.sub, short: p.short, howShort: p.howShort, info: p.info, how: p.how, data: !!p.data })),
+            view: [0, 0, VB_W, H],
+            parts: order.map((p) => {
+                const o = p.offset || [0, 0];
+                const a = T([p.bb[0] + o[0], p.bb[1] + o[1]]), b = T([p.bb[2] + o[0], p.bb[3] + o[1]]);
+                return {
+                    id: p.id, num: p.num, name: p.name, sub: p.sub, short: p.short, howShort: p.howShort, info: p.info, how: p.how, data: !!p.data,
+                    box: [a[0], a[1], b[0] - a[0], b[1] - a[1]], anchor: T(p.anchorPt),
+                };
+            }),
             height: H,
         };
     }
