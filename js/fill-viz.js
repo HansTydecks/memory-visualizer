@@ -6,7 +6,6 @@
 (function () {
     const MV = window.MV;
     const U = MV.units;
-    const reduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const NOTES = {
         spiral: 'Der Laser brennt eine Spirale – von innen nach außen.',
@@ -185,7 +184,7 @@
         window.addEventListener('resize', onResize);
         const draw = dev.fill === 'flash' ? drawFlash : drawDisc;
 
-        const fast = reduce();
+        const fast = false; // immer volle Animation (auch bei „weniger Bewegung“ im System)
         const SEQ = Math.min(N, 6);
         const seqDur = fast ? 0 : 1900;
         const T = fast ? 400 : Math.max(seqDur + 600, N <= 6 ? seqDur + 300 : 7600);

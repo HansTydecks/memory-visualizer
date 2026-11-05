@@ -177,6 +177,9 @@
             const body = $('stage-body');
             const { dev, step } = this.flow;
             body.className = 'stage-body s' + step;
+            // weiches Einblenden bei jedem Schritt
+            void body.offsetWidth;
+            body.classList.add('enter');
             if (!dev) return this.renderHome(body);
             const d = MV.deviceById(dev);
             [null, this.renderScan, this.renderExplode, this.renderEstimate, this.renderStore, this.renderCompare][step].call(this, body, d);
@@ -254,131 +257,153 @@
             });
         },
 
-        /* --- 2 Explosionsansicht: Bauteil-Tour mit Zoom --- */
+        /* --- 2 Explosionsansicht: Bauteil-Tour mit Kamerafahrten --- */
         renderExplode(body, d) {
             const xv = MV.renderExploded(MV.exploded[d.id]);
             const parts = xv.parts;
             const dataPart = parts.find((p) => p.data);
             const unlocked = this.xvSeen.has(d.id) || (this.state.devices[d.id].reached || 0) > 2;
+            const pins = parts.map((p, i) =>
+                `<button type="button" class="xv-pin${p.data ? ' is-data' : ''}" data-part="${p.id}" style="--d:${i * 60}ms" aria-label="Bauteil ${p.num}: ${p.name}"><span>${p.num}</span></button>`).join('');
             body.innerHTML =
                 `<div class="xv-wrap">` +
                 `<h3 class="sr-only">Explosionsansicht: ${d.name}</h3>` +
-                `<div class="xv-stage${unlocked ? '' : ' hint-data'}" id="xv-stage">${xv.svg}` +
+                `<div class="xv-stage${unlocked ? '' : ' hint-data'}" id="xv-stage">` +
+                `<div class="xv-viewport" id="xv-vp">${xv.svg}<div class="xv-pins" id="xv-pins">${pins}</div></div>` +
                 `<div class="xv-card" id="xv-card" role="region" aria-label="Bauteil-Info" hidden></div></div>` +
-                `<div class="xv-bar"><button type="button" class="btn btn-ghost" id="xv-toggle">Zerlegen</button>` +
+                `<div class="xv-bar"><button type="button" class="btn btn-ghost" id="xv-toggle">Zusammenbauen</button>` +
                 (MV.exploded[d.id].note ? `<span class="xv-scale">${MV.exploded[d.id].note}</span>` : '') + `</div>` +
                 `<ol class="xv-list" id="xv-list" aria-label="Bauteile">${parts.map((p) => `<li><button type="button" data-part="${p.id}" class="${p.data ? 'is-data' : ''}"><span class="n">${p.num}</span>${p.name}</button></li>`).join('')}</ol>` +
                 `<div class="actions"><button type="button" class="btn btn-primary" id="to-est" ${unlocked ? '' : 'disabled'}>Weiter</button>` +
                 `<span class="lock-hint" id="lock-hint">${unlocked ? '' : `Schau dir zuerst Bauteil ${dataPart.num} an.`}</span></div>` +
                 `</div>`;
             const stage = $('xv-stage');
+            const vp = $('xv-vp');
             const card = $('xv-card');
             const toggle = $('xv-toggle');
-            const svgEl = stage.querySelector('svg');
-            const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const svgEl = vp.querySelector('svg');
+            const { ease, tween, clamp01 } = MV.motion;
 
-            /* ---- Kamera (viewBox) ---- */
-            let base = xv.view.slice();   // Übersicht, an das Seitenverhältnis der Bühne angepasst
-            let view = base.slice();
+            // Bauteile (Zeichenreihenfolge: unten -> oben) und Nummern-Knöpfe
+            const groups = [...svgEl.querySelectorAll('.xv-part')].map((g) => ({
+                g, dx: +g.dataset.dx || 0, dy: +g.dataset.dy || 0, inner: g.classList.contains('is-inner'), v: 0,
+            }));
+            const extra = svgEl.querySelector('.xv-extra');
+            const pinEls = parts.map((p) => stage.querySelector(`.xv-pin[data-part="${p.id}"]`));
+
             let wide = true;
-            let raf = 0;
-            let cur = -1;                 // Index des gewählten Bauteils
-            const applyView = (v) => {
-                view = v;
-                svgEl.setAttribute('viewBox', v.map((n) => Math.round(n * 10) / 10).join(' '));
-                svgEl.style.setProperty('--inv', ((v[2] / Math.max(1, svgEl.clientWidth)) * (svgEl.clientWidth < 500 ? 0.8 : 1)).toFixed(4));
+            let cur = -1;          // gewähltes Bauteil
+            let exploded = false;  // Zielzustand
+            let busy = null;       // laufende Explosion
+            let pending = -1;      // Auswahl, die nach der Explosion angeflogen wird
+            const timers = [];
+
+            const cam = new MV.Camera(svgEl, (v) => {
+                for (let i = 0; i < parts.length; i++) {
+                    const [x, y] = cam.toScreen(parts[i].anchor, v);
+                    pinEls[i].style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+                }
+            });
+
+            /* ---- Ansichten ---- */
+            const A = () => cam.W / cam.H;
+            const frameBox = (bx, by, bw, bh, pad) => {
+                const w = Math.max(bw * pad, bh * pad * A());
+                return [bx + bw / 2, by + bh / 2, Math.min(w, cam.base[2] * 1.4)];
             };
-            const fit = () => {
-                const w = stage.clientWidth;
-                wide = w >= 560;
-                stage.classList.toggle('wide', wide);
-                const [, , VW, VH] = xv.view;
-                const h = Math.max(300, Math.min(window.innerHeight * 0.7, (w * VH) / VW));
-                svgEl.style.height = Math.round(h) + 'px';
-                const A = w / h;
-                // Übersicht: ganze Zeichnung, auf das Seitenverhältnis erweitert
-                base = VW / VH > A ? [0, VH / 2 - VW / A / 2, VW, VW / A] : [VW / 2 - (VH * A) / 2, 0, VH * A, VH];
-                cancelAnimationFrame(raf);
-                applyView(cur >= 0 ? target(parts[cur]) : base);
-            };
+            const asmView = () => { const [x, y, w, h] = xv.asmBox; return frameBox(x, y, w, h, 1.5); };
             const target = (p) => {
-                const A = base[2] / base[3];
+                const base = cam.base, a = A();
                 // Bauteil + seine Nummer müssen sichtbar sein
-                const r = 26 * (base[2] / Math.max(1, svgEl.clientWidth));
+                const r = 26 * (base[2] / cam.W);
                 const x0 = Math.min(p.box[0], p.anchor[0] - r), y0 = Math.min(p.box[1], p.anchor[1] - r);
                 const x1 = Math.max(p.box[0] + p.box[2], p.anchor[0] + r), y1 = Math.max(p.box[1] + p.box[3], p.anchor[1] + r);
                 const bx = x0, by = y0, bw = x1 - x0, bh = y1 - y0;
                 const cx = bx + bw / 2, cy = by + bh / 2;
-                // maßvoller Zoom: das Gerät bleibt im Blick
                 // mit Karte rechts: Bauteil muss in die linken 56 % passen (große Bauteile: etwas herauszoomen)
-                const need = wide ? Math.max(bw / 0.52, (bh * A) / 0.8) : Math.max(bw / 0.75, (bh * A) / 0.8);
+                const need = wide ? Math.max(bw / 0.52, (bh * a) / 0.8) : Math.max(bw / 0.75, (bh * a) / 0.8);
                 const W = Math.min(base[2] * (wide ? 1.4 : 1), Math.max(need, base[2] * 0.55));
-                const H = W / A;
+                const H = W / a;
                 let x = cx - W * (wide ? 0.3 : 0.5);
                 let y = cy - H / 2;
-                const clamp = (v, a, b) => Math.max(Math.min(a, b), Math.min(v, Math.max(a, b)));
+                const clamp = (v, lo, hi) => Math.max(Math.min(lo, hi), Math.min(v, Math.max(lo, hi)));
                 if (!wide || W <= base[2]) x = clamp(x, base[0] - (wide ? W * 0.2 : 0), base[0] + base[2] - (wide ? W * 0.6 : W));
                 y = clamp(y, base[1], base[1] + base[3] - H);
-                return [x, y, W, H];
+                return [x + W / 2, y + H / 2, W];
             };
-            const flyTo = (to) => {
-                cancelAnimationFrame(raf);
-                const from = view.slice();
-                if (reduce) { applyView(to); return; }
-                const c0 = [from[0] + from[2] / 2, from[1] + from[3] / 2], c1 = [to[0] + to[2] / 2, to[1] + to[3] / 2];
-                const dist = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]);
-                const bump = Math.min(0.4, dist / (from[2] + to[2]));
-                const A = to[2] / to[3];
-                const T0 = performance.now(), DUR = 800;
-                const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-                const step = (now) => {
-                    const t = Math.min(1, (now - T0) / DUR), e = ease(t);
-                    const W = (from[2] + (to[2] - from[2]) * e) * (1 + bump * Math.sin(Math.PI * t));
-                    const cx = c0[0] + (c1[0] - c0[0]) * e, cy = c0[1] + (c1[1] - c0[1]) * e;
-                    applyView([cx - W / 2, cy - W / A / 2, W, W / A]);
-                    if (t < 1) raf = requestAnimationFrame(step); else applyView(to);
-                };
-                raf = requestAnimationFrame(step);
+            const restView = () => (cur >= 0 ? target(parts[cur]) : exploded ? cam.overview : asmView());
+
+            const fit = () => {
+                const w = Math.max(1, vp.clientWidth);
+                wide = stage.clientWidth >= 560;
+                stage.classList.toggle('wide', wide);
+                stage.classList.toggle('small', w < 500);
+                const [, , VW, VH] = xv.view;
+                const h = Math.round(Math.max(300, Math.min(window.innerHeight * 0.7, (w * VH) / VW)));
+                vp.style.height = h + 'px';
+                const a = w / h;
+                const base = VW / VH > a ? [0, VH / 2 - VW / a / 2, VW, VW / a] : [VW / 2 - (VH * a) / 2, 0, VH * a, VH];
+                cam.stop();
+                cam.setFrame(w, h, base);
+                cam.apply(restView());
             };
 
-            /* ---- Zerlegen / Zusammenbauen ---- */
-            const setExploded = (on) => {
-                stage.classList.toggle('exploded', on);
+            /* ---- Explosion: Teile heben nacheinander ab, die Kamera fährt mit ---- */
+            const setPart = (q, v) => {
+                q.v = v;
+                q.g.setAttribute('transform', v ? `translate(${(q.dx * v).toFixed(2)} ${(q.dy * v).toFixed(2)})` : '');
+                // innere Teile erst sichtbar machen, wenn sie aus dem Gehäuse heraus sind
+                if (q.inner) q.g.setAttribute('opacity', v >= 1 ? '1' : clamp01((v - 0.18) / 0.32).toFixed(3));
+            };
+            const STAGGER = 90, DUR = 1150;
+            const explode = (on, onDone) => {
+                if (busy) busy.cancel();
+                exploded = on;
                 toggle.textContent = on ? 'Zusammenbauen' : 'Zerlegen';
-                if (!on) overview();
+                stage.classList.add('moving');
+                stage.classList.toggle('exploded', on);
+                if (!on) { stage.classList.remove('pins-on'); deselect(false); }
+                // Zerlegen: oberstes Teil zuerst. Zusammenbauen: unterstes zuerst (oberstes landet zuletzt).
+                const n = groups.length;
+                const seq = groups.map((q, i) => ({ q, from: q.v, to: on ? 1 : 0, delay: (on ? n - 1 - i : i) * STAGGER }));
+                const total = DUR + (n - 1) * STAGGER;
+                const ex0 = +extra.getAttribute('opacity') || 0;
+                cam.flyTo(on ? cam.overview : asmView(), { path: 'lerp', dur: total, easing: ease.inOutSine });
+                busy = tween({
+                    dur: total, easing: ease.linear,
+                    onUpdate: (t) => {
+                        const ms = t * total;
+                        seq.forEach((s) => setPart(s.q, s.from + (s.to - s.from) * ease.inOutCubic(clamp01((ms - s.delay) / DUR))));
+                        extra.setAttribute('opacity', (ex0 + ((on ? 1 : 0) - ex0) * clamp01((t - 0.65) / 0.35)).toFixed(3));
+                    },
+                    onDone: () => {
+                        busy = null;
+                        stage.classList.remove('moving');
+                        if (on) stage.classList.add('pins-on');
+                        onDone && onDone();
+                        if (on && pending >= 0) { const i = pending; pending = -1; select(i); }
+                    },
+                });
             };
-            toggle.addEventListener('click', () => setExploded(!stage.classList.contains('exploded')));
-            const t = setTimeout(() => setExploded(true), 600);
-            let t2 = 0;
-            fit();
-            window.addEventListener('resize', fit);
-            this.anim = { stop: () => { clearTimeout(t); clearTimeout(t2); cancelAnimationFrame(raf); window.removeEventListener('resize', fit); } };
+            toggle.addEventListener('click', () => explode(!exploded));
 
-            /* ---- Auswahl ---- */
+            /* ---- Auswahl mit Kamerafahrt ---- */
+            // Nummer und Liste sofort markieren (billig); Glanz und Abdunkeln im SVG erst nach der Fahrt,
+            // damit die Zeichnung während der Kamerafahrt nicht in jedem Frame neu gezeichnet werden muss.
+            const markSvg = (id) => {
+                svgEl.querySelectorAll('.xv-part.sel').forEach((n) => n.classList.remove('sel'));
+                if (id) { const g = svgEl.querySelector(`.xv-part[data-part="${id}"]`); if (g) g.classList.add('sel'); }
+                stage.classList.toggle('focus', !!id);
+            };
             const mark = (id) => {
-                stage.querySelectorAll('.sel').forEach((n) => n.classList.remove('sel'));
-                if (id) stage.querySelectorAll(`[data-part="${id}"]`).forEach((n) => n.classList.add('sel'));
+                pinEls.forEach((b) => b.classList.toggle('sel', b.dataset.part === id));
                 $('xv-list').querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.part === id));
             };
-            const overview = () => {
-                cur = -1;
-                mark(null);
-                stage.classList.remove('focus');
-                card.hidden = true;
-                flyTo(base);
-            };
-            const select = (i, focusMarker) => {
-                if (i < 0 || i >= parts.length) return;
+            const cardHtml = (i) => {
                 const p = parts[i];
-                const first = !stage.classList.contains('exploded');
-                if (first) setExploded(true);
-                cur = i;
-                mark(p.id);
-                stage.classList.add('focus');
                 const more = [p.info, p.how].filter(Boolean).map((x) => `<p>${x}</p>`).join('');
                 const last = i === parts.length - 1;
-                card.innerHTML =
-                    `<div class="xv-card-head"><h4><span class="n${p.data ? ' is-data' : ''}">${p.num}</span>${p.name}</h4>` +
+                return `<div class="xv-card-head"><h4><span class="n${p.data ? ' is-data' : ''}">${p.num}</span>${p.name}</h4>` +
                     `<button type="button" class="xv-close" data-act="close" aria-label="Ganzes Gerät zeigen" title="Ganzes Gerät zeigen">×</button></div>` +
                     `<p class="short">${p.short || p.info}</p>` +
                     (p.data && p.howShort ? `<div class="xv-how"><b>So speichert es Daten:</b> ${p.howShort}</div>` : '') +
@@ -386,12 +411,37 @@
                     `<div class="xv-nav"><button type="button" class="btn btn-ghost btn-sm" data-act="prev" ${i === 0 ? 'disabled' : ''} aria-label="Vorheriges Bauteil">‹</button>` +
                     `<span class="xv-count">${p.num} von ${parts.length}</span>` +
                     `<button type="button" class="btn btn-ghost btn-sm" data-act="${last ? 'close' : 'next'}">${last ? 'Ganzes Gerät' : 'Nächstes ›'}</button></div>`;
-                card.hidden = false;
-                card.scrollTop = 0;
-                // erst nach dem Zerlegen hinfliegen
-                clearTimeout(t2);
-                if (first && !reduce) t2 = setTimeout(() => flyTo(target(p)), 700); else flyTo(target(p));
-                if (focusMarker) { const m = stage.querySelector(`.xv-marker[data-part="${p.id}"]`); if (m) m.focus({ preventScroll: true }); }
+            };
+            let swapT = 0;
+            const showCard = (i, refocus) => {
+                clearTimeout(swapT);
+                const fill = () => {
+                    card.innerHTML = cardHtml(i);
+                    card.scrollTop = 0;
+                    card.classList.remove('swap');
+                    if (refocus) { const b = card.querySelector(`[data-act="${refocus}"]`) || card.querySelector('[data-act="close"]'); if (b && !b.disabled) b.focus({ preventScroll: true }); }
+                };
+                if (card.hidden) { card.hidden = false; card.classList.remove('swap'); fill(); }
+                else { card.classList.add('swap'); swapT = setTimeout(fill, 180); }
+            };
+            const deselect = (fly = true) => {
+                cur = -1;
+                mark(null);
+                clearTimeout(swapT);
+                card.hidden = true;
+                if (fly && exploded) cam.flyTo(cam.overview, { onDone: () => markSvg(null) });
+                else markSvg(null);
+            };
+            const select = (i, opt = {}) => {
+                if (i < 0 || i >= parts.length) return;
+                if (!exploded || busy) { pending = i; if (!exploded) explode(true); return; }
+                const p = parts[i];
+                cur = i;
+                mark(p.id);
+                svgEl.querySelectorAll('.xv-part.sel').forEach((n) => n.classList.remove('sel'));
+                showCard(i, opt.refocus);
+                cam.flyTo(target(p), { onDone: () => { if (cur === i) markSvg(p.id); } });
+                if (opt.focusPin) pinEls[i].focus({ preventScroll: true });
                 if (p.data) {
                     this.xvSeen.add(d.id);
                     stage.classList.remove('hint-data');
@@ -399,34 +449,36 @@
                     $('lock-hint').textContent = '';
                     this.say('Genau, hier liegen die Daten! Schau dir ruhig noch die anderen Bauteile an – dann „Weiter“.');
                 }
-                if (!wide) card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+                if (!wide) timers.push(setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 250));
             };
             const idx = (id) => parts.findIndex((p) => p.id === id);
 
             stage.addEventListener('click', (e) => {
                 const a = e.target.closest('[data-act]');
                 if (a) {
-                    if (a.dataset.act === 'close') overview();
-                    else select(cur + (a.dataset.act === 'next' ? 1 : -1));
-                    if (!card.hidden) { const b = card.querySelector(`[data-act="${a.dataset.act}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); }
+                    const act = a.dataset.act;
+                    if (act === 'close') {
+                        const back = cur >= 0 ? pinEls[cur] : null;
+                        deselect();
+                        if (back) back.focus({ preventScroll: true });
+                    } else select(cur + (act === 'next' ? 1 : -1), { refocus: act });
                     return;
                 }
                 if (card.contains(e.target)) return;
                 const n = e.target.closest('[data-part]');
-                if (n && n.dataset.part && stage.classList.contains('exploded')) select(idx(n.dataset.part));
+                if (n && n.dataset.part && (exploded || n.classList.contains('xv-pin'))) select(idx(n.dataset.part));
             });
             stage.addEventListener('keydown', (e) => {
-                const n = e.target.closest('.xv-marker');
-                if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(idx(n.dataset.part)); return; }
                 if (e.target.closest('summary, input')) return;
+                const onPin = !!e.target.closest('.xv-pin');
                 if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
                     e.preventDefault();
-                    select(cur < 0 ? 0 : cur + (e.key === 'ArrowRight' ? 1 : -1), !!n);
+                    select(cur < 0 ? 0 : cur + (e.key === 'ArrowRight' ? 1 : -1), { focusPin: onPin });
                 } else if (e.key === 'Escape' && cur >= 0) {
                     e.preventDefault();
-                    const back = stage.querySelector(`.xv-marker[data-part="${parts[cur].id}"]`);
-                    overview();
-                    if (back) back.focus({ preventScroll: true });
+                    const back = pinEls[cur];
+                    deselect();
+                    back.focus({ preventScroll: true });
                 }
             });
             $('xv-list').addEventListener('click', (e) => {
@@ -434,6 +486,21 @@
                 if (b) select(idx(b.dataset.part));
             });
             $('to-est').addEventListener('click', () => this.go(d.id, 3));
+
+            /* ---- Start: zusammengebaut groß im Bild, dann sanft zerlegen ---- */
+            groups.forEach((q) => setPart(q, 0));
+            fit();
+            cam.apply(asmView());
+            window.addEventListener('resize', fit);
+            requestAnimationFrame(() => requestAnimationFrame(() => timers.push(setTimeout(() => { if (!exploded) explode(true); }, 450))));
+            this.anim = {
+                stop: () => {
+                    timers.forEach(clearTimeout); clearTimeout(swapT);
+                    if (busy) busy.cancel();
+                    cam.stop();
+                    window.removeEventListener('resize', fit);
+                },
+            };
             this.say(unlocked ? 'Klicke auf die Nummern und schau dir die Bauteile an. Dann „Weiter“.' :
                 `So sieht ${ART[d.article][0]} ${d.name} innen aus. Klicke auf die Nummern – fang bei 1 an. Das pinke Bauteil speichert deine Daten.`);
         },

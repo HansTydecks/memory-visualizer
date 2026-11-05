@@ -286,6 +286,8 @@ details.more > p { margin-top: 6px; color: var(--text-dim); }
 .task p { font-size: 1.05rem; color: #fff; }
 .task.flash { animation: taskflash 0.9s ease-out; }
 @keyframes taskflash { from { background: rgba(249, 240, 2, 0.22); } to { background: rgba(249, 240, 2, 0.06); } }
+.stage-body.enter { animation: stagein 0.32s ease-out; }
+@keyframes stagein { from { opacity: 0; transform: translateY(8px); } }
 .stage-body h3 { font-size: clamp(1.25rem, 2.2vw, 1.6rem); font-weight: 600; line-height: 1.35; color: #fff; margin-bottom: 10px; }
 .stage-body h3:focus { outline: none; }
 
@@ -305,43 +307,47 @@ details.more > p { margin-top: 6px; color: var(--text-dim); }
 
 /* Explosionsansicht */
 .xv-stage { position: relative; border: 1px solid var(--line); border-radius: 8px; background: radial-gradient(ellipse at 50% 45%, rgba(63, 216, 255, 0.07), transparent 70%), #09080f; }
-.xv { display: block; width: 100%; height: 440px; }
+.xv-viewport { position: relative; overflow: hidden; border-radius: 8px; height: 440px; touch-action: manipulation; }
+.xv { display: block; transform-origin: 0 0; }
 .xv-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
 .xv-scale { font-size: 0.9rem; color: var(--text-faint); }
 
-.xv-part { transition: transform 0.95s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s, filter 0.2s; transition-delay: calc(var(--i) * 55ms); }
-.xv-stage.exploded .xv-part { transform: translate(var(--dx), var(--dy)); }
-.xv-rig { transition: transform 0.95s cubic-bezier(0.2, 0.8, 0.2, 1); transform: translate(var(--ax), var(--ay)); }
-.xv-stage.exploded .xv-rig { transform: none; }
-.xv-stage:not(.exploded) .is-inner { opacity: 0; transition-delay: 0s; }
+/* Bewegung macht JS (motion.js); CSS blendet nur Deckkraft und Glanz */
+.xv-part { transition: opacity 0.5s ease, filter 0.35s ease; }
+.xv-stage.moving .xv-part { transition: none; filter: none !important; }
 .xv-stage.exploded .xv-part.has-info { cursor: pointer; }
-.xv-stage.exploded .xv-part.has-info:hover { filter: brightness(1.3); }
+.xv-stage.exploded:not(.moving) .xv-part.has-info:hover { filter: brightness(1.3); }
 .xv-stage.exploded .xv-part.is-data { filter: drop-shadow(0 0 5px rgba(255, 42, 109, 0.85)); }
 .xv-stage.exploded .xv-part.sel { filter: drop-shadow(0 0 7px rgba(249, 240, 2, 0.95)) brightness(1.15); }
-.xv-extra, .xv-markers { opacity: 0; transition: opacity 0.35s; pointer-events: none; }
-.xv-stage.exploded .xv-extra, .xv-stage.exploded .xv-markers { opacity: 1; transition-delay: 0.85s; pointer-events: auto; }
+.xv-extra { pointer-events: none; transition: opacity 0.5s; }
 /* Fokus auf ein Bauteil: die anderen treten zurück */
-.xv-part { transition-property: transform, opacity, filter; transition-delay: calc(var(--i) * 55ms), 0s, 0s; }
 .xv-stage.focus .xv-part:not(.sel) { opacity: 0.38; }
 .xv-stage.focus .xv-extra { opacity: 0.38; }
 
-/* Nummern-Marker: bleiben beim Zoomen gleich groß (--inv = viewBox-Einheiten pro Bildschirmpixel) */
-.xv-marker { cursor: pointer; outline: none; }
-.xv-m { transform: scale(var(--inv, 1)); transition: transform 0.25s; }
-.xv-marker:hover .xv-m { transform: scale(calc(var(--inv, 1) * 1.12)); }
-.xv-hit { fill: transparent; }
-.xv-ring { fill: #0b0a16; stroke: var(--cyan); stroke-width: 2.5; }
-.xv-marker text { fill: var(--cyan); font: 600 20px var(--font); pointer-events: none; }
-.xv-marker.is-data .xv-ring { stroke: var(--pink); }
-.xv-marker.is-data text { fill: var(--pink-soft); }
-.xv-marker.sel .xv-ring { fill: var(--yellow); stroke: var(--yellow); }
-.xv-marker.sel text { fill: #0a0614; }
-.xv-marker:focus-visible .xv-hit { stroke: #fff; stroke-width: 3; stroke-dasharray: 5 4; }
+/* Nummern: HTML-Knöpfe über der Zeichnung, Position setzt die Kamera */
+.xv-pins { position: absolute; inset: 0; pointer-events: none; }
+.xv-pin {
+    position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0;
+    display: grid; place-items: center; background: none; border: 0; border-radius: 50%; cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity 0.45s ease var(--d, 0s);
+}
+.xv-stage.pins-on .xv-pin { opacity: 1; pointer-events: auto; }
+.xv-pin span {
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    background: #0b0a16; border: 2.5px solid var(--cyan); color: var(--cyan); font: 600 17px/1 var(--font);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); transition: transform 0.2s ease, background 0.25s, border-color 0.25s, color 0.25s;
+}
+.xv-pin:hover span { transform: scale(1.12); }
+.xv-pin.is-data span { border-color: var(--pink); color: var(--pink-soft); }
+.xv-pin.sel span { background: var(--yellow); border-color: var(--yellow); color: #0a0614; transform: scale(1.08); }
+.xv-pin:focus { outline: none; }
+.xv-pin:focus-visible span { outline: 3px dashed #fff; outline-offset: 3px; }
+.xv-stage.small .xv-pin span { width: 28px; height: 28px; font-size: 14px; border-width: 2px; }
+/* solange das Daten-Bauteil noch nicht angeklickt wurde: sanftes Pulsieren */
+.xv-stage.hint-data.pins-on .xv-pin.is-data span { animation: datapulse 1.3s ease-in-out infinite; }
+@keyframes datapulse { 50% { background: rgba(255, 42, 109, 0.55); } }
 .xv-note { font: 500 14px var(--font); }
 .xv-note-dim { fill: var(--text-dim); font-weight: 400; }
-/* solange das Daten-Bauteil noch nicht angeklickt wurde: sanftes Pulsieren */
-.xv-stage.hint-data.exploded .xv-marker.is-data .xv-ring { animation: datapulse 1.3s ease-in-out infinite; }
-@keyframes datapulse { 50% { fill: rgba(255, 42, 109, 0.55); } }
 
 .xv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); list-style: none; gap: 6px; margin-top: 12px; }
 .xv-list button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 10px; text-align: left; background: transparent; border: 2px solid var(--line); border-radius: 6px; color: var(--text); }
@@ -356,6 +362,8 @@ details.more > p { margin-top: 6px; color: var(--text-dim); }
 .xv-stage.wide .xv-card { position: absolute; top: 12px; right: 12px; width: clamp(240px, 40%, 360px); max-height: calc(100% - 28px); overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
 .xv-stage:not(.wide) .xv-card { margin: 0 10px 10px; }
 .xv-card[hidden] { display: none; }
+.xv-card > * { transition: opacity 0.18s ease, transform 0.18s ease; }
+.xv-card.swap > * { opacity: 0; transform: translateY(4px); }
 @keyframes cardin { from { opacity: 0; transform: translateY(6px); } }
 .xv-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .xv-card h4 { display: flex; align-items: center; gap: 10px; font-size: 1.12rem; font-weight: 600; color: #fff; line-height: 1.3; }
@@ -498,6 +506,4 @@ details.more > p { margin-top: 6px; color: var(--text-dim); }
     .props dd.sep { border-top: 0; padding-top: 0; }
     .est-vs { grid-template-columns: 1fr; }
 }
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; transition-delay: 0s !important; }
-}
+

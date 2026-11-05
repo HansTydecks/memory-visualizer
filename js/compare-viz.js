@@ -5,7 +5,6 @@
 (function () {
     const MV = window.MV;
     const U = MV.units;
-    const reduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function tiles(cv, small, big, opt = {}) {
         const k = big.cap / small.cap; // Anzahl kleiner Einheiten im großen Medium
@@ -65,7 +64,7 @@
             }
         };
 
-        const fast = reduce() || opt.instant;
+        const fast = !!opt.instant; // immer volle Animation (auch bei „weniger Bewegung“ im System)
         if (fast || zf >= z0) { drawAt(1); return { stop() {} }; }
         const D = 3600, t0 = performance.now();
         let raf;

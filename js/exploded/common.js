@@ -310,39 +310,31 @@
         const ty = PAD - exp[1] * k;
         const H = Math.ceil((exp[3] - exp[1]) * k + 2 * PAD);
         const T = (p) => [tx + p[0] * k, ty + p[1] * k];
-        // Versatz, damit das zusammengebaute Gerät mittig steht
-        const asmShift = [((exp[0] + exp[2]) - (asm[0] + asm[2])) / 2, ((exp[1] + exp[3]) - (asm[1] + asm[3])) / 2];
 
         const labelled = parts.filter((p) => p.anchorPt && p.name);
         // Nummer 1 = oberstes Bauteil (zuletzt gezeichnet)
         const order = labelled.slice().reverse();
         order.forEach((p, i) => (p.num = i + 1));
 
-        const markers = order.map((p) => {
-            const a = T(p.anchorPt);
-            const cls = p.data ? ' is-data' : '';
-            return `<g class="xv-marker${cls}" data-part="${p.id}" transform="translate(${f(a[0])} ${f(a[1])})" tabindex="0" role="button" aria-label="Bauteil ${p.num}: ${p.name}">` +
-                `<g class="xv-m"><circle class="xv-hit" r="24"/><circle class="xv-ring" r="17"/><text y="7" text-anchor="middle">${p.num}</text></g></g>`;
-        }).join('');
-
-        const partSvg = parts.map((p, i) => {
+        // Bauteile: Versatz (in Szenen-Einheiten) als data-Attribute – bewegt wird per JS
+        const partSvg = parts.map((p) => {
             const o = p.offset || [0, 0];
             const cls = 'xv-part' + (p.data ? ' is-data' : '') + (p.inner ? ' is-inner' : '') + (p.name ? ' has-info' : '');
-            return `<g class="${cls}" data-part="${p.id || ''}" style="--dx:${f(o[0])}px;--dy:${f(o[1])}px;--i:${parts.length - i}">${p.svg}</g>`;
+            return `<g class="${cls}" data-part="${p.id || ''}" data-dx="${f(o[0])}" data-dy="${f(o[1])}"${p.inner ? ' opacity="0"' : ''}>${p.svg}</g>`;
         }).join('');
         const extraSvg = sc.extras.map((e) => e.svg).join('');
 
         const svg = `<svg class="xv" viewBox="0 0 ${VB_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Explosionsansicht: ${device.title}">` +
             `<defs>${sc.defs.join('')}</defs>` +
             `<g transform="translate(${f(tx)} ${f(ty)}) scale(${f3(k)})">` +
-            `<g class="xv-rig" style="--ax:${f(asmShift[0])}px;--ay:${f(asmShift[1])}px">${partSvg}<g class="xv-extra">${extraSvg}</g></g>` +
-            `</g>` +
-            `<g class="xv-markers">${markers}</g>` +
-            `</svg>`;
+            `${partSvg}<g class="xv-extra" opacity="0">${extraSvg}</g>` +
+            `</g></svg>`;
 
+        const a0 = T([asm[0], asm[1]]), a1 = T([asm[2], asm[3]]);
         return {
             svg,
             view: [0, 0, VB_W, H],
+            asmBox: [a0[0], a0[1], a1[0] - a0[0], a1[1] - a0[1]],
             parts: order.map((p) => {
                 const o = p.offset || [0, 0];
                 const a = T([p.bb[0] + o[0], p.bb[1] + o[1]]), b = T([p.bb[2] + o[0], p.bb[3] + o[1]]);
