@@ -23,7 +23,7 @@
             sc.part({
                 id: 'pcb', short: 'Elektronik: steuert Motor und Kopf, hier wird das Kabel angesteckt.', name: 'Platine', sub: 'Controller, Cache, SATA',
                 info: 'Die Elektronik sitzt auf der Unterseite. Der Controller steuert Motor und Kopfarm und prüft die Daten auf Fehler. Der Cache ist ein kleiner, schneller Zwischenspeicher. Über den SATA-Anschluss kommen Daten und Strom.',
-                anchor: [101.6 - 6, 120, -0.8], side: 'R', explode: [0, 0, -44],
+                anchor: [95.6, 120, 0], side: 'R', explode: [0, 0, -82],
             }, (s) => {
                 let g = s.prism(box(6, 18, 89.6, 124), -1.6, 1.6, M.pcb);
                 g += s.prism(box(40, 100, 16, 16), 0, 1.2, M.chip);

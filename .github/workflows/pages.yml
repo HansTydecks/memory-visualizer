@@ -1,0 +1,70 @@
+# Veröffentlicht die Seite über GitHub Actions auf GitHub Pages.
+# Einmalig nötig: Settings → Pages → „Build and deployment“ → Source: „GitHub Actions“.
+name: Seite veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nur eine Veröffentlichung gleichzeitig; laufende Deploys werden nicht abgebrochen.
+concurrency:
+  group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Prüfen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: JavaScript-Syntax prüfen
+        run: |
+          for f in $(find js -name '*.js'); do
+            node --check "$f" || exit 1
+          done
+
+      - name: Eingebundene Dateien vorhanden?
+        run: |
+          missing=0
+          for f in $(grep -oE '(src|href)="[^":#]+"' index.html | sed -E 's/^(src|href)="//; s/"$//'); do
+            if [ ! -e "$f" ]; then echo "Fehlt: $f"; missing=1; fi
+          done
+          exit $missing
+
+  deploy:
+    name: Veröffentlichen
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/configure-pages@v5
+
+      - name: Seitendateien zusammenstellen
+        run: |
+          mkdir -p _site
+          cp -r index.html styles.css js CNAME favicon.svg favicon-32.png apple-touch-icon.png _site/
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
