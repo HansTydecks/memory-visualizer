@@ -62,6 +62,14 @@ jobs:
           mkdir -p _site
           cp -r index.html styles.css js CNAME favicon.svg favicon-32.png apple-touch-icon.png _site/
 
+      # Versionsnummer an Skripte und Stylesheet hängen: Nach jeder Veröffentlichung
+      # lädt der Browser alle Dateien neu statt alte und neue aus dem Cache zu mischen.
+      - name: Cache-Versionen setzen
+        run: |
+          v="${GITHUB_SHA::8}"
+          sed -i -E "s#(src|href)=\"(js/[^\"]+\.js|styles\.css)\"#\1=\"\2?v=$v\"#g" _site/index.html
+          grep -c "?v=$v" _site/index.html
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
