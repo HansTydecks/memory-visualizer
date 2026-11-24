@@ -15,7 +15,7 @@
     const at = (t, w) => [PIV[0] + d[0] * t + n[0] * w, PIV[1] + d[1] * t + n[1] * w];
 
     MV.exploded.hdd = {
-        title: 'Festplatte (HDD)',
+        title: 'HDD-Festplatte (3,5″)',
         build() {
             const sc = new MV.Scene(1.9, 22);
             const OUT = rrect(0, 0, 101.6, 147, 3, 3);
