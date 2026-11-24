@@ -198,7 +198,7 @@
                 this.say('Mach im Explorer einen Rechtsklick auf „Lied.mp3“ und wähle „Eigenschaften“.');
             } else if (done === MV.DEVICES.length) {
                 h = 'Alle Geräte geschafft!';
-                p = `Du kennst jetzt alle ${MV.DEVICES.length} Speichermedien – von der Diskette bis zur SSD.`;
+                p = `Du kennst jetzt alle ${MV.DEVICES.length} Speichermedien – von der Diskette bis zur SSD-Festplatte.`;
                 this.say('Super gemacht! Du kannst jedes Gerät noch einmal anklicken.');
             } else {
                 h = done ? 'Weiter zum nächsten Gerät' : 'Jetzt kommt ein echtes Gerät';
@@ -667,7 +667,7 @@
             this.go(null, 0);
             if (first && this.doneCount() === MV.DEVICES.length) {
                 document.body.classList.add('all-done');
-                this.confirm('Alle Geräte geschafft!', `<p>Du hast alle ${MV.DEVICES.length} Speichermedien untersucht – von der Diskette bis zur SSD.</p>` +
+                this.confirm('Alle Geräte geschafft!', `<p>Du hast alle ${MV.DEVICES.length} Speichermedien untersucht – von der Diskette bis zur SSD-Festplatte.</p>` +
                     MV.compareViz.ladder(MV.DEVICES.map((x) => ({ ...x, cap: this.state.devices[x.id].cap })), []), 'Super!');
             }
         },

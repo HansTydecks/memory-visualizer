@@ -9,7 +9,7 @@
     const L = 'font-family="Lexend, system-ui, sans-serif"';
 
     MV.exploded.ssd = {
-        title: 'SSD (2,5″ SATA)',
+        title: 'SSD-Festplatte (2,5″ SATA)',
         build() {
             const sc = new MV.Scene(2.6, 22);
             const OUT = rrect(0, 0, 100, 69.85, 2.5, 3);
@@ -17,7 +17,7 @@
 
             sc.part({
                 id: 'base', short: 'Flache Metallwanne, in der die Platine sitzt.', name: 'Gehäuseboden', sub: 'Aluminium',
-                info: 'Die untere Hälfte des Gehäuses: eine flache Wanne aus Aluminium oder Kunststoff. Die Platine wird hineingelegt und festgeschraubt.',
+                info: 'Die untere Hälfte des Gehäuses: eine flache Wanne aus Aluminium oder Kunststoff. Die Platine wird hineingelegt und festgeschraubt. Die SSD hat genau die Form einer kleinen 2,5-Zoll-HDD-Festplatte – so passt sie in jeden Laptop und PC, in dem vorher eine HDD steckte. Beides sind Festplatten, nur die Technik innen ist ganz anders.',
                 anchor: [100, 50, 1.5], side: 'R', explode: [0, 0, 0],
             }, (s) => s.prism(OUT, 0, 3, M.metal, { hole: rrect(1.5, 1.5, 97, 66.85, 1.5, 3), floorZ: 0.8, floorFill: '#262d3b' }));
 
@@ -50,7 +50,7 @@
             sc.part({
                 id: 'nand', short: 'Mehrere Speicherchips mit Milliarden winziger Zellen.', howShort: 'Wie beim USB-Stick: Eingesperrte Elektronen bedeuten 0 oder 1 – auch ohne Strom.', inner: true, name: 'NAND-Flash-Chips', sub: 'hier liegen die Daten', data: true,
                 info: 'Hier liegen deine Dateien: mehrere Flash-Speicherchips nebeneinander, jeder mit Milliarden Speicherzellen in über 100 Lagen übereinander.',
-                how: 'Die gleiche Technik wie im USB-Stick: In jeder Zelle werden Elektronen in einer isolierten Falle eingesperrt – gefangen oder nicht ergibt 0 oder 1, auch ohne Strom. Der Trick der SSD: Der Controller schreibt gleichzeitig auf mehrere Chips. Darum ist sie viel schneller als ein USB-Stick. Und anders als die Festplatte hat sie keine beweglichen Teile – sie ist leise und verträgt Stöße.',
+                how: 'Die gleiche Technik wie im USB-Stick: In jeder Zelle werden Elektronen in einer isolierten Falle eingesperrt – gefangen oder nicht ergibt 0 oder 1, auch ohne Strom. Der Trick der SSD: Der Controller schreibt gleichzeitig auf mehrere Chips. Darum ist sie viel schneller als ein USB-Stick. Und anders als die HDD-Festplatte hat sie keine beweglichen Teile – sie ist leise und verträgt Stöße.',
                 anchor: [8, 61, 3.4], side: 'L', explode: [0, 0, CHIP],
             }, (s) => {
                 let g = '';
@@ -92,7 +92,7 @@
 
             sc.part({
                 id: 'lid', short: 'Deckel mit Etikett – hier steht die Kapazität.', name: 'Gehäusedeckel', sub: 'mit Etikett',
-                info: 'Der Deckel schließt das flache Gehäuse. Auf dem Etikett steht die Speicherkapazität – genau die Zahl, die du gerade eingetragen hast. Anders als bei der Festplatte muss das Gehäuse nicht staubdicht sein, denn innen bewegt sich nichts.',
+                info: 'Der Deckel schließt das flache Gehäuse. Auf dem Etikett steht die Speicherkapazität – genau die Zahl, die du gerade eingetragen hast. Anders als bei der HDD-Festplatte muss das Gehäuse nicht staubdicht sein, denn innen bewegt sich nichts.',
                 anchor: [100, 22, 6], side: 'R', explode: [0, 0, LID],
             }, (s) => {
                 let g = s.prism(OUT, 3, 4, M.steel, { topFill: s.linGrad([[0, '#c7d1df'], [0.5, '#8e9bad'], [1, '#b7c2d2']], 0, 0, 1, 1) });

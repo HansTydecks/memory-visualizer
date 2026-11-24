@@ -29,21 +29,27 @@
             fill: 'flash', verb: 'speichert', file: 'lied', tech: 'elektronisch',
         },
         {
+            id: 'microsd', name: 'microSD-Karte', plural: 'microSD-Karten', unit: 'gb', article: 'die', gen: 'der microSD-Karte', year: 2005,
+            range: [64 * MB, 2 * TB], typical: '32 GB – 512 GB', thick: 1,
+            hint: 'Die Zahl steht vorne auf dem Kärtchen, z. B. „64 GB“. Zeichen wie U3, V30 oder A2 sagen nur, wie schnell die Karte ist – nicht, wie viel draufpasst.',
+            fill: 'flash', verb: 'speichert', file: 'panorama', tech: 'elektronisch',
+        },
+        {
             id: 'smartphone', name: 'Smartphone', plural: 'Smartphones', unit: 'gb', article: 'das', gen: 'des Smartphones', year: 2007,
             range: [8 * GB, 2 * TB], typical: '64 GB – 1 TB', thick: 8,
             hint: 'Einstellungen → „Speicher“ (Android) bzw. Allgemein → „iPhone-Speicher“. Nimm die Gesamtkapazität – nicht den Arbeitsspeicher (RAM)!',
             fill: 'flash', verb: 'speichert', file: 'trailer', tech: 'elektronisch',
         },
         {
-            id: 'hdd', name: 'Festplatte', plural: 'Festplatten', unit: 'gb', article: 'die', gen: 'der Festplatte', year: 1956,
+            id: 'hdd', name: 'HDD-Festplatte', plural: 'HDD-Festplatten', unit: 'gb', article: 'die', gen: 'der HDD-Festplatte', year: 1956,
             range: [40 * GB, 30 * TB], typical: '500 GB – 4 TB', thick: 26.1,
-            hint: 'Auf dem Etikett oben auf der Festplatte steht die Kapazität, z. B. „1 TB“ oder „500 GB“.',
+            hint: 'HDD heißt Hard Disk Drive: Innen drehen sich Magnetscheiben. Auf dem Etikett oben steht die Kapazität, z. B. „1 TB“ oder „500 GB“.',
             fill: 'tracks-out', verb: 'schreibt', file: 'film', tech: 'magnetisch',
         },
         {
-            id: 'ssd', name: 'SSD', plural: 'SSDs', unit: 'gb', article: 'die', gen: 'der SSD', year: 2007,
+            id: 'ssd', name: 'SSD-Festplatte', plural: 'SSD-Festplatten', unit: 'gb', article: 'die', gen: 'der SSD-Festplatte', year: 2007,
             range: [32 * GB, 16 * TB], typical: '256 GB – 2 TB', thick: 7,
-            hint: 'Auf dem Etikett steht die Kapazität, z. B. „500 GB“ oder „1 TB“. Im Computer: Dieser PC → Laufwerk → Eigenschaften.',
+            hint: 'SSD heißt Solid State Drive: eine Festplatte ohne bewegliche Teile – statt Magnetscheiben speichern Flash-Chips die Daten. Auf dem Etikett steht die Kapazität, z. B. „500 GB“ oder „1 TB“. Im Computer: Dieser PC → Laufwerk → Eigenschaften.',
             fill: 'flash', verb: 'speichert', file: 'film', tech: 'elektronisch',
         },
     ];
